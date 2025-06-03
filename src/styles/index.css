@@ -119,9 +119,17 @@
   }
 }
 
-/* For ReactFlow*/
+/* ReactFlow*/
 html,
 body,
 #root {
   height: 100%;
+}
+
+/* CustomNode：node-xx のxxがnodetypesのキーと対応  */
+.react-flow__node-custom { 
+  font-size: 14px;
+  border: 1px solid black;
+  border-radius: 5px;
+  text-align: center;
 }
