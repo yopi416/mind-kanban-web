@@ -17,6 +17,7 @@ export type MindMapStore = {
   edges: Edge[]
   onNodesChange: OnNodesChange
   onEdgesChange: OnEdgesChange
+  updateNodeLabel: (nodeId: string, label: string) => void
 }
 
 const useMindMapStore = create<MindMapStore>((set, get) => ({
@@ -30,6 +31,22 @@ const useMindMapStore = create<MindMapStore>((set, get) => ({
   onEdgesChange: (changes: EdgeChange[]) => {
     set({
       edges: applyEdgeChanges(changes, get().edges),
+    })
+  },
+  updateNodeLabel: (nodeId: string, label: string) => {
+    set({
+      nodes: get().nodes.map((node) => {
+        if (node.id === nodeId) {
+          return {
+            ...node,
+            data: {
+              ...node.data,
+              label,
+            },
+          }
+        }
+        return node
+      }),
     })
   },
 }))
