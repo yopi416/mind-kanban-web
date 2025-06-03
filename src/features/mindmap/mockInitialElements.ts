@@ -6,8 +6,7 @@ export const initialNodes: Node[] = [
   {
     // id: nanoid(),
     id: '1',
-    // type: 'mindmap',
-    type: 'default',
+    type: 'custom',
     data: { label: '1' },
     targetPosition: Position.Left,
     sourcePosition: Position.Right,
@@ -16,8 +15,7 @@ export const initialNodes: Node[] = [
   {
     // id: nanoid(),
     id: '2',
-    // type: 'mindmap',
-    type: 'default',
+    type: 'custom',
     data: { label: '2' },
     targetPosition: Position.Left,
     sourcePosition: Position.Right,
@@ -26,8 +24,7 @@ export const initialNodes: Node[] = [
   {
     // id: nanoid(),
     id: '3',
-    // type: 'mindmap',
-    type: 'default',
+    type: 'custom',
     data: { label: '3' },
     targetPosition: Position.Left,
     sourcePosition: Position.Right,
@@ -36,8 +33,7 @@ export const initialNodes: Node[] = [
   {
     // id: nanoid(),
     id: '1-1',
-    // type: 'mindmap',
-    type: 'default',
+    type: 'custom',
     data: { label: '1-1' },
     targetPosition: Position.Left,
     sourcePosition: Position.Right,
@@ -47,8 +43,7 @@ export const initialNodes: Node[] = [
   {
     // id: nanoid(),
     id: '1-2',
-    // type: 'mindmap',
-    type: 'default',
+    type: 'custom',
     data: { label: '1-2' },
     targetPosition: Position.Left,
     sourcePosition: Position.Right,
@@ -58,8 +53,7 @@ export const initialNodes: Node[] = [
   {
     // id: nanoid(),
     id: '2-1',
-    // type: 'mindmap',
-    type: 'default',
+    type: 'custom',
     data: { label: '2-1' },
     targetPosition: Position.Left,
     sourcePosition: Position.Right,
@@ -69,8 +63,7 @@ export const initialNodes: Node[] = [
   {
     // id: nanoid(),
     id: '2-1-1',
-    // type: 'mindmap',
-    type: 'default',
+    type: 'custom',
     data: { label: '2-1-1' },
     targetPosition: Position.Left,
     sourcePosition: Position.Right,
@@ -80,8 +73,7 @@ export const initialNodes: Node[] = [
   {
     // id: nanoid(),
     id: '3-1',
-    // type: 'mindmap',
-    type: 'default',
+    type: 'custom',
     data: { label: '3-1' },
     targetPosition: Position.Left,
     sourcePosition: Position.Right,
@@ -91,8 +83,7 @@ export const initialNodes: Node[] = [
   {
     // id: nanoid(),
     id: '3-2',
-    // type: 'mindmap',
-    type: 'default',
+    type: 'custom',
     data: { label: '3-2' },
     targetPosition: Position.Left,
     sourcePosition: Position.Right,
@@ -102,8 +93,7 @@ export const initialNodes: Node[] = [
   {
     // id: nanoid(),
     id: '3-3',
-    // type: 'mindmap',
-    type: 'default',
+    type: 'custom',
     data: { label: '3-3' },
     targetPosition: Position.Left,
     sourcePosition: Position.Right,
