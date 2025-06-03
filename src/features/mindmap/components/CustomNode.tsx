@@ -1,15 +1,49 @@
+import { useRef, useLayoutEffect } from 'react'
 import { Handle, Position, type Node, type NodeProps } from '@xyflow/react'
 import { RiKanbanView2 } from 'react-icons/ri' //kanbanIcon
 import { MdOutlineCheckBox } from 'react-icons/md' //checkIcon
 // import { MdOutlineCheckBoxOutlineBlank} from "react-icons/md"; //checkIcon
 import { FaRegCommentDots } from 'react-icons/fa' //commentIcon
 import { CiCirclePlus } from 'react-icons/ci' //plusIcon
+import useMindMapStore from '../store'
 
 export type NodeData = {
   label: string
 }
 
-function CustomNode({ data }: NodeProps<Node<NodeData>>) {
+function CustomNode({ id, data }: NodeProps<Node<NodeData>>) {
+  const textAreaRef = useRef<HTMLTextAreaElement>(null)
+  const updateNodeLabel = useMindMapStore((store) => store.updateNodeLabel)
+
+  const resizeTextArea = (el: HTMLTextAreaElement, text: string) => {
+    if (!el) return
+
+    const lines = text.split('\n')
+    const maxLineLength = Math.max(...lines.map((line) => line.length))
+    const lineCount = lines.length
+
+    // 横幅：最長行に基づき ch 単位で指定
+    const charWidth = maxLineLength * 1.53
+    el.style.width = `${charWidth}ch`
+
+    // 縦幅：行数 × 行の高さ（1em） + 少し余白（例: 0.5em）
+    const lineHeight = lineCount * 1.33
+    el.style.height = `${lineHeight + 0.5}em`
+  }
+
+  // マウント直後 & React Flow からラベル更新が来たときに textareのwidth を合わせる
+  useLayoutEffect(() => {
+    if (textAreaRef.current) {
+      resizeTextArea(textAreaRef.current, data.label)
+    }
+  }, [data.label])
+
+  // 入力中にもリアルタイムで textareのwidth を更新する
+  const handleChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    updateNodeLabel(id, e.target.value)
+    resizeTextArea(e.currentTarget, e.target.value)
+  }
+
   return (
     <div>
       <div className="flex justify-end gap-2">
@@ -23,6 +57,7 @@ function CustomNode({ data }: NodeProps<Node<NodeData>>) {
         <button
           onClick={() => {
             console.log('test-button')
+            console.log(data.label)
           }}
         >
           <CiCirclePlus size={20} />
@@ -33,9 +68,10 @@ function CustomNode({ data }: NodeProps<Node<NodeData>>) {
       </div>
 
       <textarea
-        rows={1}
-        defaultValue={data.label}
-        className="w-40 text-center text-2xl"
+        value={data.label}
+        onChange={handleChange}
+        ref={textAreaRef}
+        className="min-w-[40px] resize-none overflow-hidden text-center text-2xl"
       />
 
       <Handle type="target" position={Position.Left} />
