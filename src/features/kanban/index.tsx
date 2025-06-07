@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import { useState } from 'react'
 import { DndContext } from '@dnd-kit/core'
 
 import { Draggable } from './components/Draggable'

@@ -19,12 +19,12 @@ function CustomNode({ id, data }: NodeProps<Node<NodeData>>) {
     if (!el) return
 
     const lines = text.split('\n')
-    const maxLineLength = Math.max(...lines.map((line) => line.length))
+    // const maxLineLength = Math.max(...lines.map((line) => line.length))
     const lineCount = lines.length
 
     // 横幅：最長行に基づき ch 単位で指定
-    const charWidth = maxLineLength * 1.53
-    el.style.width = `${charWidth}ch`
+    // const charWidth = maxLineLength * 1.53
+    // el.style.width = `${charWidth}ch`
 
     // 縦幅：行数 × 行の高さ（1em） + 少し余白（例: 0.5em）
     const lineHeight = lineCount * 1.33
@@ -71,7 +71,7 @@ function CustomNode({ id, data }: NodeProps<Node<NodeData>>) {
         value={data.label}
         onChange={handleChange}
         ref={textAreaRef}
-        className="min-w-[40px] resize-none overflow-hidden text-center text-2xl"
+        className="w-60 resize-none overflow-hidden px-3 pt-1 text-center text-2xl"
       />
 
       <Handle type="target" position={Position.Left} />
