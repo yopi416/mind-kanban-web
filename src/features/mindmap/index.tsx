@@ -16,6 +16,7 @@ const selector = (state: MindMapStore) => ({
   edges: state.edges,
   onNodesChange: state.onNodesChange,
   onEdgesChange: state.onEdgesChange,
+  onNodesDelete: state.onNodesDelete,
   setNodes: state.setNodes,
 })
 
@@ -27,8 +28,14 @@ const nodeTypes = {
 // const nodeOrigin: NodeOrigin = [0.5, 0.5]
 
 function MindMap() {
-  const { nodes, edges, onNodesChange, onEdgesChange, setNodes } =
-    useMindMapStore(useShallow(selector))
+  const {
+    nodes,
+    edges,
+    onNodesChange,
+    onEdgesChange,
+    setNodes,
+    onNodesDelete,
+  } = useMindMapStore(useShallow(selector))
 
   //全ノードが計測済み（node.measuredが格納されたら）になったらdagreによるレイアウト実行
   useEffect(() => {
@@ -49,9 +56,10 @@ function MindMap() {
         edges={edges}
         onNodesChange={onNodesChange}
         onEdgesChange={onEdgesChange}
+        onNodesDelete={onNodesDelete}
         nodeTypes={nodeTypes}
         // nodeOrigin={nodeOrigin}
-        nodesDraggable={false}
+        // nodesDraggable={false}
         // fitView
       >
         <Background />

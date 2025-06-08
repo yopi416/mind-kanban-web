@@ -7,26 +7,30 @@ import {
   type NodeChange,
   type OnNodesChange,
   type OnEdgesChange,
+  type OnNodesDelete,
 } from '@xyflow/react'
 import { create } from 'zustand'
+import { collectDescendantIds } from './utils/nodeTreeUtils'
 
 import { initialNodes, initialEdges } from './mockInitialElements'
+import { type NodeData } from './components/CustomNode'
 
 export type MindMapStore = {
-  nodes: Node[]
+  nodes: Node<NodeData>[]
   edges: Edge[]
-  onNodesChange: OnNodesChange
+  onNodesChange: OnNodesChange<Node<NodeData>>
   onEdgesChange: OnEdgesChange
-  setNodes: (nodes: Node[]) => void
+  onNodesDelete: OnNodesDelete<Node<NodeData>>
+  setNodes: (nodes: Node<NodeData>[]) => void
   updateNodeLabel: (nodeId: string, label: string) => void
 }
 
 const useMindMapStore = create<MindMapStore>((set, get) => ({
   nodes: initialNodes,
   edges: initialEdges,
-  onNodesChange: (changes: NodeChange[]) => {
+  onNodesChange: (changes: NodeChange<Node<NodeData>>[]) => {
     set({
-      nodes: applyNodeChanges(changes, get().nodes),
+      nodes: applyNodeChanges<Node<NodeData>>(changes, get().nodes),
     })
   },
   onEdgesChange: (changes: EdgeChange[]) => {
@@ -34,7 +38,24 @@ const useMindMapStore = create<MindMapStore>((set, get) => ({
       edges: applyEdgeChanges(changes, get().edges),
     })
   },
-  setNodes: (newNodes: Node[]) => {
+  onNodesDelete: (deletedNodes: Node<NodeData>[]) => {
+    set((state) => {
+      const deletedNodeIds = collectDescendantIds(
+        deletedNodes.map((node) => node.id),
+        state.nodes
+      )
+
+      return {
+        nodes: state.nodes.filter((node) => !deletedNodeIds.includes(node.id)),
+        edges: state.edges.filter(
+          (edge) =>
+            !deletedNodeIds.includes(edge.source) &&
+            !deletedNodeIds.includes(edge.target)
+        ),
+      }
+    })
+  },
+  setNodes: (newNodes: Node<NodeData>[]) => {
     set({
       nodes: newNodes,
     })
