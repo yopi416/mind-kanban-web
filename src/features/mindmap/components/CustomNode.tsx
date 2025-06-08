@@ -9,6 +9,7 @@ import useMindMapStore from '../store'
 
 export type NodeData = {
   label: string
+  parentId?: string | null
 }
 
 function CustomNode({ id, data }: NodeProps<Node<NodeData>>) {

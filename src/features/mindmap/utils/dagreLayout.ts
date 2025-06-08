@@ -1,14 +1,16 @@
 import dagre from '@dagrejs/dagre'
 import { type Node, type Edge, Position } from '@xyflow/react'
+import type { NodeData } from '../components/CustomNode'
 
 const FALLBACK_W = 160
 const FALLBACK_H = 40
 
 export function getLayoutedNodes(
-  nodes: Node[],
+  nodes: Node<NodeData>[],
   edges: Edge[],
   dir: 'TB' | 'LR' = 'LR'
-): Node[] {
+): Node<NodeData>[] {
+  // console.log("testtesttest")
   const isHorizontal = dir === 'LR'
   const g = new dagre.graphlib.Graph().setDefaultEdgeLabel(() => ({}))
 
