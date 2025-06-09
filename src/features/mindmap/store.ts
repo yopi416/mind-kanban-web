@@ -10,10 +10,15 @@ import {
   type OnNodesDelete,
 } from '@xyflow/react'
 import { create } from 'zustand'
-import { collectDescendantIds } from './utils/nodeTreeUtils'
+import {
+  collectDescendantIds,
+  findBottomNodeIdx,
+  findBottomEdgeIdx,
+} from './utils/nodeTreeUtils'
 
 import { initialNodes, initialEdges } from './mockInitialElements'
 import { type NodeData } from './components/CustomNode'
+import { nanoid } from 'nanoid'
 
 export type MindMapStore = {
   nodes: Node<NodeData>[]
@@ -22,6 +27,7 @@ export type MindMapStore = {
   onEdgesChange: OnEdgesChange
   onNodesDelete: OnNodesDelete<Node<NodeData>>
   setNodes: (nodes: Node<NodeData>[]) => void
+  addHorizontalElement: (parentId: string) => void
   updateNodeLabel: (nodeId: string, label: string) => void
 }
 
@@ -58,6 +64,42 @@ const useMindMapStore = create<MindMapStore>((set, get) => ({
   setNodes: (newNodes: Node<NodeData>[]) => {
     set({
       nodes: newNodes,
+    })
+  },
+  addHorizontalElement: (parentId: string) => {
+    const currentNodes = get().nodes
+    const currentEdges = get().edges
+
+    const insertNodeIdx = findBottomNodeIdx(parentId, currentNodes) + 1
+    const insertEdgeIdx = findBottomEdgeIdx(parentId, currentEdges) + 1
+
+    const newNodeId = nanoid()
+
+    const newNode: Node<NodeData> = {
+      id: newNodeId,
+      type: 'custom',
+      data: { label: '', parentId },
+      position: { x: 0, y: 0 },
+    }
+
+    const newEdge: Edge = {
+      id: `e${parentId}${newNodeId}`,
+      source: parentId,
+      target: newNodeId,
+      type: 'smoothstep',
+    }
+
+    set({
+      nodes: [
+        ...currentNodes.slice(0, insertNodeIdx),
+        newNode,
+        ...currentNodes.slice(insertNodeIdx),
+      ],
+      edges: [
+        ...currentEdges.slice(0, insertEdgeIdx),
+        newEdge,
+        ...currentEdges.slice(insertEdgeIdx),
+      ],
     })
   },
   updateNodeLabel: (nodeId: string, label: string) => {

@@ -18,9 +18,9 @@ export function getLayoutedNodes(
     rankdir: dir,
     // align: "UR",
     // acyclicer: 'greedy',
-    nodesep: 70,
-    ranksep: 100,
-    marginx: 50,
+    nodesep: 50,
+    ranksep: 80,
+    marginx: 100,
     // marginy: 30,
   })
 

@@ -5,16 +5,24 @@ import { MdOutlineCheckBox } from 'react-icons/md' //checkIcon
 // import { MdOutlineCheckBoxOutlineBlank} from "react-icons/md"; //checkIcon
 import { FaRegCommentDots } from 'react-icons/fa' //commentIcon
 import { CiCirclePlus } from 'react-icons/ci' //plusIcon
-import useMindMapStore from '../store'
+import useMindMapStore, { type MindMapStore } from '../store'
+import { useShallow } from 'zustand/shallow'
 
 export type NodeData = {
   label: string
   parentId?: string | null
 }
 
+const selector = (store: MindMapStore) => ({
+  updateNodeLabel: store.updateNodeLabel,
+  addHorizontalElement: store.addHorizontalElement,
+})
+
 function CustomNode({ id, data }: NodeProps<Node<NodeData>>) {
   const textAreaRef = useRef<HTMLTextAreaElement>(null)
-  const updateNodeLabel = useMindMapStore((store) => store.updateNodeLabel)
+  const { updateNodeLabel, addHorizontalElement } = useMindMapStore(
+    useShallow(selector)
+  )
 
   const resizeTextArea = (el: HTMLTextAreaElement, text: string) => {
     if (!el) return
@@ -49,18 +57,14 @@ function CustomNode({ id, data }: NodeProps<Node<NodeData>>) {
     <div>
       <div className="flex justify-end gap-2">
         <button
+          type="button"
           onClick={() => {
             console.log('test-button')
           }}
         >
           <CiCirclePlus size={20} />
         </button>
-        <button
-          onClick={() => {
-            console.log('test-button')
-            console.log(data.label)
-          }}
-        >
+        <button type="button" onClick={() => addHorizontalElement(id)}>
           <CiCirclePlus size={20} />
         </button>
         <MdOutlineCheckBox size={20} />

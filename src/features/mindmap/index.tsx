@@ -11,13 +11,13 @@ import { isEqual } from 'lodash'
 
 import '@xyflow/react/dist/style.css'
 
-const selector = (state: MindMapStore) => ({
-  nodes: state.nodes,
-  edges: state.edges,
-  onNodesChange: state.onNodesChange,
-  onEdgesChange: state.onEdgesChange,
-  onNodesDelete: state.onNodesDelete,
-  setNodes: state.setNodes,
+const selector = (store: MindMapStore) => ({
+  nodes: store.nodes,
+  edges: store.edges,
+  onNodesChange: store.onNodesChange,
+  onEdgesChange: store.onEdgesChange,
+  onNodesDelete: store.onNodesDelete,
+  setNodes: store.setNodes,
 })
 
 const nodeTypes = {
