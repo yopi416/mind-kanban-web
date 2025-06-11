@@ -14,11 +14,15 @@ import {
   collectDescendantIds,
   findBottomNodeIdx,
   findBottomEdgeIdx,
+  getNodeIdxById,
+  getEdgeIdxByTargetNodeId,
 } from './utils/nodeTreeUtils'
 
 import { initialNodes, initialEdges } from './mockInitialElements'
 import { type NodeData } from './components/CustomNode'
 import { nanoid } from 'nanoid'
+import { createEdge, createNode } from './utils/elementFactory'
+import { insertAfter } from './utils/arrayUtils'
 
 export type MindMapStore = {
   nodes: Node<NodeData>[]
@@ -28,6 +32,7 @@ export type MindMapStore = {
   onNodesDelete: OnNodesDelete<Node<NodeData>>
   setNodes: (nodes: Node<NodeData>[]) => void
   addHorizontalElement: (parentId: string) => void
+  addVerticalElement: (aboveNodeId: string, parentId: string) => void
   updateNodeLabel: (nodeId: string, label: string) => void
 }
 
@@ -70,36 +75,48 @@ const useMindMapStore = create<MindMapStore>((set, get) => ({
     const currentNodes = get().nodes
     const currentEdges = get().edges
 
-    const insertNodeIdx = findBottomNodeIdx(parentId, currentNodes) + 1
-    const insertEdgeIdx = findBottomEdgeIdx(parentId, currentEdges) + 1
-
     const newNodeId = nanoid()
-
-    const newNode: Node<NodeData> = {
-      id: newNodeId,
-      type: 'custom',
-      data: { label: '', parentId },
-      position: { x: 0, y: 0 },
-    }
-
-    const newEdge: Edge = {
-      id: `e${parentId}${newNodeId}`,
-      source: parentId,
-      target: newNodeId,
-      type: 'smoothstep',
-    }
+    const newNode: Node<NodeData> = createNode(newNodeId, parentId)
+    const newEdge: Edge = createEdge(parentId, newNodeId)
 
     set({
-      nodes: [
-        ...currentNodes.slice(0, insertNodeIdx),
+      nodes: insertAfter<Node<NodeData>>(
+        currentNodes,
         newNode,
-        ...currentNodes.slice(insertNodeIdx),
-      ],
-      edges: [
-        ...currentEdges.slice(0, insertEdgeIdx),
+        findBottomNodeIdx(parentId, currentNodes)
+      ),
+      edges: insertAfter<Edge>(
+        currentEdges,
         newEdge,
-        ...currentEdges.slice(insertEdgeIdx),
-      ],
+        findBottomEdgeIdx(parentId, currentEdges)
+      ),
+    })
+  },
+  addVerticalElement: (aboveNodeId: string, parentId: string) => {
+    const currentNodes = get().nodes
+    const currentEdges = get().edges
+
+    const aboveNodeIdx = getNodeIdxById(aboveNodeId, currentNodes)
+
+    if (aboveNodeIdx === -1) {
+      console.error(`Node "${aboveNodeId}" not found.`)
+      return
+    }
+
+    const aboveEdgeIdx = getEdgeIdxByTargetNodeId(aboveNodeId, currentEdges)
+
+    if (aboveEdgeIdx === -1) {
+      console.error(`No edge found with target "${aboveNodeId}"`)
+      return
+    }
+
+    const newNodeId = nanoid()
+    const newNode: Node<NodeData> = createNode(newNodeId, parentId)
+    const newEdge: Edge = createEdge(parentId, newNodeId)
+
+    set({
+      nodes: insertAfter<Node<NodeData>>(currentNodes, newNode, aboveNodeIdx),
+      edges: insertAfter<Edge>(currentEdges, newEdge, aboveEdgeIdx),
     })
   },
   updateNodeLabel: (nodeId: string, label: string) => {

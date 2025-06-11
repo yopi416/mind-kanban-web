@@ -16,13 +16,13 @@ export type NodeData = {
 const selector = (store: MindMapStore) => ({
   updateNodeLabel: store.updateNodeLabel,
   addHorizontalElement: store.addHorizontalElement,
+  addVerticalElement: store.addVerticalElement,
 })
 
 function CustomNode({ id, data }: NodeProps<Node<NodeData>>) {
   const textAreaRef = useRef<HTMLTextAreaElement>(null)
-  const { updateNodeLabel, addHorizontalElement } = useMindMapStore(
-    useShallow(selector)
-  )
+  const { updateNodeLabel, addHorizontalElement, addVerticalElement } =
+    useMindMapStore(useShallow(selector))
 
   const resizeTextArea = (el: HTMLTextAreaElement, text: string) => {
     if (!el) return
@@ -56,14 +56,15 @@ function CustomNode({ id, data }: NodeProps<Node<NodeData>>) {
   return (
     <div>
       <div className="flex justify-end gap-2">
-        <button
-          type="button"
-          onClick={() => {
-            console.log('test-button')
-          }}
-        >
-          <CiCirclePlus size={20} />
-        </button>
+        {data.parentId && (
+          <button
+            type="button"
+            onClick={() => addVerticalElement(id, data.parentId!)}
+          >
+            <CiCirclePlus size={20} />
+          </button>
+        )}
+
         <button type="button" onClick={() => addHorizontalElement(id)}>
           <CiCirclePlus size={20} />
         </button>
