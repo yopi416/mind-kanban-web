@@ -12,7 +12,7 @@ export function createNode(id: string, parentId: string): Node<NodeData> {
 
 export function createEdge(sourceNodeId: string, targetNodeId: string): Edge {
   return {
-    id: `e${sourceNodeId}${targetNodeId}`,
+    id: `e_${sourceNodeId}_${targetNodeId}`,
     source: sourceNodeId,
     target: targetNodeId,
     type: 'smoothstep',

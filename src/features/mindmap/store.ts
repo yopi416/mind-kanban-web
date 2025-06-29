@@ -16,13 +16,17 @@ import {
   findBottomEdgeIdx,
   getNodeIdxById,
   getEdgeIdxByTargetNodeId,
+  getSubtreeWithUpdatedParent,
+  getNodesExcludingSubtree,
+  getSubtreeEdgesWithUpdatedParent,
+  getEdgesExcludingSubtree,
 } from './utils/nodeTreeUtils'
 
 import { initialNodes, initialEdges } from './mockInitialElements'
 import { type NodeData } from './components/CustomNode'
 import { nanoid } from 'nanoid'
 import { createEdge, createNode } from './utils/elementFactory'
-import { insertAfter } from './utils/arrayUtils'
+import { insertAfter, insertBefore } from './utils/arrayUtils'
 
 import { subscribeWithSelector } from 'zustand/middleware'
 
@@ -36,8 +40,16 @@ export type MindMapStore = {
   addHorizontalElement: (parentId: string) => void
   addVerticalElement: (aboveNodeId: string, parentId: string) => void
   moveNodeTobeChild: (movingNodeId: string, parentId: string) => void
-  // moveNodeAboveTarget: (movingNodeId: string, targetid: string) => void
-  // moveNodeBelowTarget: (movingNodeId: string, targetid: string) => void
+  moveNodeAboveTarget: (
+    movingNodeId: string,
+    belowNodeId: string,
+    parentId: string
+  ) => void
+  moveNodeBelowTarget: (
+    movingNodeId: string,
+    aboveNodeId: string,
+    parentId: string
+  ) => void
   updateNodeLabel: (nodeId: string, label: string) => void
   movingNodeId: string | null
   setMovingNodeId: (nodeId: string | null) => void
@@ -134,6 +146,7 @@ const useMindMapStore = create(
       })
     },
     moveNodeTobeChild: (movingNodeId: string, parentId: string) => {
+      //変更前ノード・エッジの取得
       const { nodes: currentNodes, edges: currentEdges } = get()
 
       /* --- 1.ノードの処理 --- */
@@ -145,19 +158,17 @@ const useMindMapStore = create(
       )
 
       // subtreeのノード群を取得
-      const movingNodes = currentNodes
-        .filter((node) => movingSubtreeIds.includes(node.id))
-        .map((node) => {
-          if (node.id === movingNodeId) {
-            return { ...node, data: { ...node.data, parentId } } //subTreeのルートノードだけparentId変更
-          } else {
-            return node
-          }
-        })
+      const movingNodes = getSubtreeWithUpdatedParent(
+        currentNodes,
+        movingSubtreeIds,
+        movingNodeId,
+        parentId
+      )
 
       // subtree以外のノード群を取得
-      const nodesWithoutSubtree = currentNodes.filter(
-        (node) => !movingSubtreeIds.includes(node.id)
+      const nodesWithoutSubtree = getNodesExcludingSubtree(
+        currentNodes,
+        movingSubtreeIds
       )
 
       // parentNodeの子ノードの最下ノードのidxを取得
@@ -173,39 +184,206 @@ const useMindMapStore = create(
       /* --- 2.Edgeの処理 --- */
 
       // 移動するエッジ群を取得
-      const movingEdges = currentEdges
-        .filter(
-          (edge) =>
-            movingSubtreeIds.includes(edge.source) ||
-            movingSubtreeIds.includes(edge.target)
-        )
-        .map((edge) => {
-          if (edge.target === movingNodeId) {
-            return {
-              ...edge,
-              id: `e${parentId}${movingNodeId}`,
-              source: parentId,
-            } //subTreeのルートノードだけparentId変更
-          } else {
-            return edge
-          }
-        })
+      const movingEdges = getSubtreeEdgesWithUpdatedParent(
+        currentEdges,
+        movingSubtreeIds,
+        movingNodeId,
+        parentId
+      )
 
       // 移動するエッジ以外のエッジ群を取得
-      const edgesWithoutMovingEdges = currentEdges.filter(
-        (edge) =>
-          !movingSubtreeIds.includes(edge.source) &&
-          !movingSubtreeIds.includes(edge.target)
+      const edgesWithoutMovingEdges = getEdgesExcludingSubtree(
+        currentEdges,
+        movingSubtreeIds
       )
 
       // 最下エッジのidxを取得
       const bottomEdgeIdx = findBottomEdgeIdx(parentId, edgesWithoutMovingEdges)
+      console.log(bottomEdgeIdx)
 
       // 移動するエッジ群を挿入
       const newEdges = insertAfter(
         edgesWithoutMovingEdges,
         movingEdges,
         bottomEdgeIdx
+      )
+
+      /* --- 3.zustand storeに反映 --- */
+      set({
+        nodes: newNodes,
+        edges: newEdges,
+      })
+
+      console.log(currentNodes)
+      console.log(currentEdges)
+
+      console.log(newNodes)
+      console.log(newEdges)
+    },
+
+    moveNodeAboveTarget: (
+      movingNodeId: string,
+      belowNodeId: string,
+      parentId: string
+    ) => {
+      //変更前ノード・エッジの取得
+      const { nodes: currentNodes, edges: currentEdges } = get()
+
+      /* --- 1.ノードの処理 --- */
+
+      // 移動するノード群(subtree)のIDを取得
+      const movingSubtreeIds = collectDescendantIds(
+        [movingNodeId],
+        currentNodes
+      )
+
+      // subtreeのノード群を取得して、ルートノードのparentIdを変更
+      const movingNodes = getSubtreeWithUpdatedParent(
+        currentNodes,
+        movingSubtreeIds,
+        movingNodeId,
+        parentId
+      )
+
+      // subtree以外のノード群を取得
+      const nodesWithoutSubtree = getNodesExcludingSubtree(
+        currentNodes,
+        movingSubtreeIds
+      )
+
+      // 移動先の上にあるノードのidxを取得
+      const belowNodeIdx = getNodeIdxById(belowNodeId, nodesWithoutSubtree)
+
+      if (belowNodeIdx === -1) {
+        console.error(`Node "${belowNodeId}" not found.`)
+        return
+      }
+
+      // subtreeを挿入
+      const newNodes = insertBefore(
+        nodesWithoutSubtree,
+        movingNodes,
+        belowNodeIdx
+      )
+
+      /* --- 2.Edgeの処理 --- */
+
+      // 移動するエッジ群を取得
+      const movingEdges = getSubtreeEdgesWithUpdatedParent(
+        currentEdges,
+        movingSubtreeIds,
+        movingNodeId,
+        parentId
+      )
+
+      // 移動するエッジ以外のエッジ群を取得
+      const edgesWithoutMovingEdges = getEdgesExcludingSubtree(
+        currentEdges,
+        movingSubtreeIds
+      )
+
+      //  移動先の下にあるエッジのidxを取得
+      const belowEdgeIdx = getEdgeIdxByTargetNodeId(
+        belowNodeId,
+        edgesWithoutMovingEdges
+      )
+
+      if (belowEdgeIdx === -1) {
+        console.error(`No edge found with target "${belowNodeId}"`)
+        return
+      }
+
+      // 移動するエッジ群を挿入
+      const newEdges = insertBefore(
+        edgesWithoutMovingEdges,
+        movingEdges,
+        belowEdgeIdx
+      )
+
+      /* --- 3.zustand storeに反映 --- */
+      set({
+        nodes: newNodes,
+        edges: newEdges,
+      })
+    },
+
+    moveNodeBelowTarget: (
+      movingNodeId: string,
+      aboveNodeId: string,
+      parentId: string
+    ) => {
+      //変更前ノード・エッジの取得
+      const { nodes: currentNodes, edges: currentEdges } = get()
+
+      /* --- 1.ノードの処理 --- */
+
+      // 移動するノード群(subtree)のIDを取得
+      const movingSubtreeIds = collectDescendantIds(
+        [movingNodeId],
+        currentNodes
+      )
+
+      // subtreeのノード群を取得して、ルートノードのparentIdを変更
+      const movingNodes = getSubtreeWithUpdatedParent(
+        currentNodes,
+        movingSubtreeIds,
+        movingNodeId,
+        parentId
+      )
+
+      // subtree以外のノード群を取得
+      const nodesWithoutSubtree = getNodesExcludingSubtree(
+        currentNodes,
+        movingSubtreeIds
+      )
+
+      // 移動先の上にあるノードのidxを取得
+      const aboveNodeIdx = getNodeIdxById(aboveNodeId, nodesWithoutSubtree)
+
+      if (aboveNodeIdx === -1) {
+        console.error(`Node "${aboveNodeId}" not found.`)
+        return
+      }
+
+      // subtreeを挿入
+      const newNodes = insertAfter(
+        nodesWithoutSubtree,
+        movingNodes,
+        aboveNodeIdx
+      )
+
+      /* --- 2.Edgeの処理 --- */
+
+      // 移動するエッジ群を取得
+      const movingEdges = getSubtreeEdgesWithUpdatedParent(
+        currentEdges,
+        movingSubtreeIds,
+        movingNodeId,
+        parentId
+      )
+
+      // 移動するエッジ以外のエッジ群を取得
+      const edgesWithoutMovingEdges = getEdgesExcludingSubtree(
+        currentEdges,
+        movingSubtreeIds
+      )
+
+      //  移動先の上にあるエッジのidxを取得
+      const aboveEdgeIdx = getEdgeIdxByTargetNodeId(
+        aboveNodeId,
+        edgesWithoutMovingEdges
+      )
+
+      if (aboveEdgeIdx === -1) {
+        console.error(`No edge found with target "${aboveNodeId}"`)
+        return
+      }
+
+      // 移動するエッジ群を挿入
+      const newEdges = insertAfter(
+        edgesWithoutMovingEdges,
+        movingEdges,
+        aboveEdgeIdx
       )
 
       /* --- 3.zustand storeに反映 --- */
