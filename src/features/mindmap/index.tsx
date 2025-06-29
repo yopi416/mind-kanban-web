@@ -1,13 +1,20 @@
 // import { ReactFlow, Background, Controls, type NodeOrigin } from '@xyflow/react'
-import { ReactFlow, Background, Controls } from '@xyflow/react'
+import {
+  ReactFlow,
+  Background,
+  Controls,
+  type OnConnectStart,
+  type OnConnectEnd,
+} from '@xyflow/react'
 
-import { useEffect } from 'react'
+import { useCallback, useEffect } from 'react'
 import { useShallow } from 'zustand/shallow'
 import useMindMapStore, { type MindMapStore } from './store'
 import CustomNode from './components/CustomNode'
 import { getLayoutedNodes } from './utils/dagreLayout'
 
 import { isEqual } from 'lodash'
+import { collectDescendantIds } from './utils/nodeTreeUtils'
 
 import '@xyflow/react/dist/style.css'
 
@@ -18,6 +25,8 @@ const selector = (store: MindMapStore) => ({
   onEdgesChange: store.onEdgesChange,
   onNodesDelete: store.onNodesDelete,
   setNodes: store.setNodes,
+  moveNodeTobeChild: store.moveNodeTobeChild,
+  setMovingNodeId: store.setMovingNodeId,
 })
 
 const nodeTypes = {
@@ -33,9 +42,85 @@ function MindMap() {
     edges,
     onNodesChange,
     onEdgesChange,
-    setNodes,
     onNodesDelete,
+    setNodes,
+    moveNodeTobeChild,
+    setMovingNodeId,
   } = useMindMapStore(useShallow(selector))
+
+  // ノードの付け替え（ドラッグ開始時）の処理
+  const onConnectStart: OnConnectStart = useCallback(
+    (_, { nodeId }) => {
+      setMovingNodeId(nodeId)
+    },
+    [setMovingNodeId]
+  )
+
+  // ノードの付け替え（ドロップ時）の処理
+  const onConnectEnd: OnConnectEnd = useCallback(
+    (e) => {
+      const { nodes: currentNodes, movingNodeId: movingNodeId } =
+        useMindMapStore.getState()
+
+      const target = e.target as HTMLElement
+      const targetNodeElement = target.closest('.react-flow__node') //ノード外（該当する親要素がない）場合は null
+
+      if (targetNodeElement && movingNodeId) {
+        // 付け替先ノードのIDを取得
+        const targetNodeId = targetNodeElement.getAttribute('data-id')
+
+        // targetNodeIdが自分の配下のノードの場合処理を中止
+        const sourceNodeDescendantIds = collectDescendantIds(
+          [movingNodeId],
+          currentNodes
+        )
+        if (!targetNodeId || sourceNodeDescendantIds.includes(targetNodeId)) {
+          setMovingNodeId(null)
+          return
+        }
+
+        // ドロップ先がノードの上・下・右部分かを判断
+        const rect = targetNodeElement.getBoundingClientRect()
+        const x = 'touches' in e ? e.touches[0].clientX : e.clientX
+        const y = 'touches' in e ? e.touches[0].clientY : e.clientY
+
+        const offsetX = x - rect.left
+        const offsetY = y - rect.top
+
+        const isRight = offsetX > rect.width * (4 / 5)
+        const isTop = offsetY < rect.height / 2
+
+        if (isRight) {
+          moveNodeTobeChild(movingNodeId, targetNodeId)
+          console.log('Right')
+        } else {
+          // ルートノードの上下には移動不可
+          if (targetNodeId === '1') {
+            setMovingNodeId(null)
+            return
+          }
+
+          if (isTop) {
+            console.log('Top')
+          } else {
+            console.log('Bottom')
+          }
+          // isTop ? moveNodeBefore() : moveNodeAfter()
+        }
+
+        // 右の場合：sourceNodeIdのparentIdをtargetNodIdにして、配下ノードの一番下に移動（エッジも）
+
+        // 上の場合：sourceNodeIdのparentIdをtargetNodeIdのparentIdにして、targetNodeの一個上に移動（エッジも）
+        // targetノードがルートノードの場合は処理を中止
+
+        // 下の場合：sourceNodeIdのparentIdをtargetNodeIdのparentIdにして、targetNodeの一個下に移動（エッジも）
+        // targetノードがルートノードの場合は処理を中止
+      }
+
+      setMovingNodeId(null)
+    },
+    [setMovingNodeId, moveNodeTobeChild]
+  )
 
   //全ノードが計測済み（node.measuredが格納されたら）になったらdagreによるレイアウト実行
   useEffect(() => {
@@ -57,7 +142,10 @@ function MindMap() {
         onNodesChange={onNodesChange}
         onEdgesChange={onEdgesChange}
         onNodesDelete={onNodesDelete}
+        onConnectStart={onConnectStart}
+        onConnectEnd={onConnectEnd}
         nodeTypes={nodeTypes}
+        connectionLineStyle={{ stroke: 'red', strokeWidth: 5 }}
         // nodeOrigin={nodeOrigin}
         // nodesDraggable={false}
         // fitView
