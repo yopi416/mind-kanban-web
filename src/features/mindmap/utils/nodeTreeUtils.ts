@@ -23,7 +23,7 @@ export function collectDescendantIds(
   return Array.from(collectedNodeIds)
 }
 
-// ある親ノード-子ノードにおける、最下のNodeのidxを取得
+// ある親ノードの子ノード群における、最下のNodeのidxを取得
 export function findBottomNodeIdx(
   parentId: string,
   nodes: Node<NodeData>[]
@@ -40,7 +40,7 @@ export function findBottomNodeIdx(
   return nodes.length - 1
 }
 
-// ある親ノード-子ノードのedgeにおける、最下のEdgeのidxを取得
+// ある親ノードの子ノードのedge群における、最下のEdgeのidxを取得
 export function findBottomEdgeIdx(parentId: string, edges: Edge[]): number {
   if (edges.length === 0) {
     return 0
