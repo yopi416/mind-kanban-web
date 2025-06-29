@@ -1,7 +1,7 @@
 import { type Node, type Edge } from '@xyflow/react'
 import { type NodeData } from '../components/CustomNode'
 
-//引数のノード配列の子ノードID・孫ノードID・・・を収集（削除用）
+//引数のノード配列の子ノードID・孫ノードID・・・を収集
 export function collectDescendantIds(
   nodeIds: string[],
   nodes: Node<NodeData>[]
@@ -64,10 +64,93 @@ export function getNodeIdxById(
   return nodes.findIndex((n) => n.id === nodeId)
 }
 
-// ターゲットノードのIDからそのノードのidxを取得する
+// ノードIDからその親ノードのidを取得する
+export function getParentIdById(
+  nodeId: string,
+  nodes: Node<NodeData>[]
+): string | null {
+  const targetNode = nodes.find((n) => n.id === nodeId)
+  return targetNode?.data.parentId ?? null
+}
+
+// ターゲットノードのIDからそのノードに接続するエッジのidxを取得する
 export function getEdgeIdxByTargetNodeId(
   targetNodeId: string,
   edges: Edge[]
 ): number {
   return edges.findIndex((e) => e.target === targetNodeId)
+}
+
+// subtreeのノード群を取得し、ソースだけparentIdを変更
+export function getSubtreeWithUpdatedParent(
+  allNodes: Node<NodeData>[],
+  subTreeNodeIds: string[],
+  rootNodeId: string,
+  newParentId: string
+): Node<NodeData>[] {
+  const subTreeNodes = allNodes
+    .filter((node) => subTreeNodeIds.includes(node.id))
+    .map((node) => {
+      if (node.id === rootNodeId) {
+        return { ...node, data: { ...node.data, parentId: newParentId } } //subTreeのルートノードだけparentId変更
+      } else {
+        return node
+      }
+    })
+
+  return subTreeNodes
+}
+
+// subtree以外のノード群を取得
+export function getNodesExcludingSubtree(
+  allNodes: Node<NodeData>[],
+  subTreeNodeIds: string[]
+): Node<NodeData>[] {
+  const nodesWithoutSubtree = allNodes.filter(
+    (node) => !subTreeNodeIds.includes(node.id)
+  )
+
+  return nodesWithoutSubtree
+}
+
+// subtreeに関わるエッジを取得し、ソースノードをターゲットとするエッジだけparentを変更
+export function getSubtreeEdgesWithUpdatedParent(
+  allEdges: Edge[],
+  subTreeNodeIds: string[],
+  rootNodeId: string,
+  newParentId: string
+): Edge[] {
+  const subTreeEdges = allEdges
+    .filter(
+      (edge) =>
+        subTreeNodeIds.includes(edge.source) ||
+        subTreeNodeIds.includes(edge.target)
+    )
+    .map((edge) => {
+      if (edge.target === rootNodeId) {
+        return {
+          ...edge,
+          id: `e_${newParentId}_${rootNodeId}`,
+          source: newParentId,
+        } //subTreeのルートノードだけparentId変更
+      } else {
+        return edge
+      }
+    })
+
+  return subTreeEdges
+}
+
+// subtreeに関わるエッジ以外のエッジを取得
+export function getEdgesExcludingSubtree(
+  allEdges: Edge[],
+  subTreeNodeIds: string[]
+): Edge[] {
+  const edgesExcludingSubtree = allEdges.filter(
+    (edge) =>
+      !subTreeNodeIds.includes(edge.source) &&
+      !subTreeNodeIds.includes(edge.target)
+  )
+
+  return edgesExcludingSubtree
 }

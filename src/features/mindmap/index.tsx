@@ -14,7 +14,7 @@ import CustomNode from './components/CustomNode'
 import { getLayoutedNodes } from './utils/dagreLayout'
 
 import { isEqual } from 'lodash'
-import { collectDescendantIds } from './utils/nodeTreeUtils'
+import { collectDescendantIds, getParentIdById } from './utils/nodeTreeUtils'
 
 import '@xyflow/react/dist/style.css'
 
@@ -26,6 +26,8 @@ const selector = (store: MindMapStore) => ({
   onNodesDelete: store.onNodesDelete,
   setNodes: store.setNodes,
   moveNodeTobeChild: store.moveNodeTobeChild,
+  moveNodeBelowTarget: store.moveNodeBelowTarget,
+  moveNodeAboveTarget: store.moveNodeAboveTarget,
   setMovingNodeId: store.setMovingNodeId,
 })
 
@@ -45,6 +47,8 @@ function MindMap() {
     onNodesDelete,
     setNodes,
     moveNodeTobeChild,
+    moveNodeBelowTarget,
+    moveNodeAboveTarget,
     setMovingNodeId,
   } = useMindMapStore(useShallow(selector))
 
@@ -59,67 +63,77 @@ function MindMap() {
   // ノードの付け替え（ドロップ時）の処理
   const onConnectEnd: OnConnectEnd = useCallback(
     (e) => {
-      const { nodes: currentNodes, movingNodeId: movingNodeId } =
-        useMindMapStore.getState()
+      try {
+        const { nodes: currentNodes, movingNodeId: movingNodeId } =
+          useMindMapStore.getState()
 
-      const target = e.target as HTMLElement
-      const targetNodeElement = target.closest('.react-flow__node') //ノード外（該当する親要素がない）場合は null
+        const target = e.target as HTMLElement
+        const targetNodeElement = target.closest('.react-flow__node') //ノード外（該当する親要素がない）場合は null
 
-      if (targetNodeElement && movingNodeId) {
-        // 付け替先ノードのIDを取得
-        const targetNodeId = targetNodeElement.getAttribute('data-id')
+        if (targetNodeElement && movingNodeId) {
+          // 移動先の基準となるターゲットノードのIDを取得
+          const targetNodeId = targetNodeElement.getAttribute('data-id')
 
-        // targetNodeIdが自分の配下のノードの場合処理を中止
-        const sourceNodeDescendantIds = collectDescendantIds(
-          [movingNodeId],
-          currentNodes
-        )
-        if (!targetNodeId || sourceNodeDescendantIds.includes(targetNodeId)) {
-          setMovingNodeId(null)
-          return
-        }
-
-        // ドロップ先がノードの上・下・右部分かを判断
-        const rect = targetNodeElement.getBoundingClientRect()
-        const x = 'touches' in e ? e.touches[0].clientX : e.clientX
-        const y = 'touches' in e ? e.touches[0].clientY : e.clientY
-
-        const offsetX = x - rect.left
-        const offsetY = y - rect.top
-
-        const isRight = offsetX > rect.width * (4 / 5)
-        const isTop = offsetY < rect.height / 2
-
-        if (isRight) {
-          moveNodeTobeChild(movingNodeId, targetNodeId)
-          console.log('Right')
-        } else {
-          // ルートノードの上下には移動不可
-          if (targetNodeId === '1') {
-            setMovingNodeId(null)
+          if (!targetNodeId) {
             return
           }
 
-          if (isTop) {
-            console.log('Top')
-          } else {
-            console.log('Bottom')
+          // targetNodeIdが自分の配下のノードの場合処理を中止
+          const sourceNodeDescendantIds = collectDescendantIds(
+            [movingNodeId],
+            currentNodes
+          )
+          if (sourceNodeDescendantIds.includes(targetNodeId)) {
+            return
           }
-          // isTop ? moveNodeBefore() : moveNodeAfter()
+
+          // ドロップ先がノードの上・下・右部分かを判断
+          const rect = targetNodeElement.getBoundingClientRect()
+          const x = 'touches' in e ? e.touches[0].clientX : e.clientX
+          const y = 'touches' in e ? e.touches[0].clientY : e.clientY
+
+          const offsetX = x - rect.left
+          const offsetY = y - rect.top
+
+          const isRight = offsetX > rect.width * (4 / 5)
+          const isTop = offsetY < rect.height / 2
+
+          if (isRight) {
+            moveNodeTobeChild(movingNodeId, targetNodeId)
+            console.log('Right')
+          } else {
+            // ルートノードの上下には移動不可
+            if (targetNodeId === '1') {
+              return
+            }
+
+            // ターゲットノードのparentIDを取得
+            const parentId = getParentIdById(targetNodeId, currentNodes)
+
+            if (parentId === null) {
+              console.error(`ParentId of Node "${targetNodeId}" not found.`)
+              return
+            }
+
+            if (isTop) {
+              moveNodeAboveTarget(movingNodeId, targetNodeId, parentId)
+              console.log('Top')
+            } else {
+              moveNodeBelowTarget(movingNodeId, targetNodeId, parentId)
+              console.log('Bottom')
+            }
+          }
         }
-
-        // 右の場合：sourceNodeIdのparentIdをtargetNodIdにして、配下ノードの一番下に移動（エッジも）
-
-        // 上の場合：sourceNodeIdのparentIdをtargetNodeIdのparentIdにして、targetNodeの一個上に移動（エッジも）
-        // targetノードがルートノードの場合は処理を中止
-
-        // 下の場合：sourceNodeIdのparentIdをtargetNodeIdのparentIdにして、targetNodeの一個下に移動（エッジも）
-        // targetノードがルートノードの場合は処理を中止
+      } finally {
+        setMovingNodeId(null)
       }
-
-      setMovingNodeId(null)
     },
-    [setMovingNodeId, moveNodeTobeChild]
+    [
+      setMovingNodeId,
+      moveNodeTobeChild,
+      moveNodeBelowTarget,
+      moveNodeAboveTarget,
+    ]
   )
 
   //全ノードが計測済み（node.measuredが格納されたら）になったらdagreによるレイアウト実行
