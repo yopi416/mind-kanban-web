@@ -8,6 +8,7 @@ import { FaRegCommentDots } from 'react-icons/fa' //commentIcon
 import { CiCirclePlus } from 'react-icons/ci' //plusIcon
 import useMindMapStore, { type MindMapStore } from '../store'
 import { useShallow } from 'zustand/shallow'
+import clsx from 'clsx'
 
 export type NodeData = {
   label: string
@@ -25,15 +26,17 @@ const selector = (store: MindMapStore) => ({
 function CustomNode({ id, data }: NodeProps<Node<NodeData>>) {
   console.log(`customeNode "${id}" が再レンダリング`)
 
+  /* zustan-storeから呼び出し */
+  const { updateNodeLabel, addHorizontalElement, addVerticalElement } =
+    useMindMapStore(useShallow(selector))
+
   /* ノードの付け替え時に色を付ける処理 */
   const [hoverPosition, setHoverPosition] = useState<HoverZone>(null)
   const [isHighlight, setIsHighlight] = useState<boolean>(false)
 
   const nodeRef = useRef<HTMLDivElement>(null) //ノード全体をwrapするdivへのref
   const movingNodeIdRef = useRef<string | null>(null)
-
-  const { updateNodeLabel, addHorizontalElement, addVerticalElement } =
-    useMindMapStore(useShallow(selector))
+  const isMovingSelf = movingNodeIdRef.current === id //自のノードが移動されているかのフラグ
 
   useEffect(() => {
     const unsub = useMindMapStore.subscribe(
@@ -44,13 +47,6 @@ function CustomNode({ id, data }: NodeProps<Node<NodeData>>) {
 
     return () => unsub()
   }, [])
-
-  // useEffect(() => {
-  // const unsubscribe = useMindMapStore.subscribe(
-
-  // )
-  // return unsubscribe
-  // }, [])
 
   const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
     if (!nodeRef.current) return
@@ -80,8 +76,31 @@ function CustomNode({ id, data }: NodeProps<Node<NodeData>>) {
     setHoverPosition(null)
   }
 
-  /* テキスト変更時に、zustandstoreに反映&テキストボックスリサイズする処理 */
+  /* ---textareaとHandle(source)どちらが動作するかの管理--- */
 
+  // textareaをpointer-events-autoにするかのフラグ
+  const [isEditing, setIsEditing] = useState(false)
+
+  // textarea の className
+  const textAreaCls = clsx(
+    'w-60 resize-none overflow-hidden px-3 pt-1 text-center text-2xl',
+    isEditing
+      ? 'relative z-[2] pointer-events-auto focus:outline-none'
+      : 'pointer-events-none select-none opacity-90'
+  )
+
+  // 編集モードへ移行するクリックハンドラ
+  const enterEdit = () => {
+    setIsEditing(true)
+
+    // フォーカスを当てる(enterEdit終了後?に実行)
+    setTimeout(() => textAreaRef.current?.focus(), 0)
+  }
+
+  // blur(focusが外れた時)で編集終了
+  const leaveEdit = () => setIsEditing(false)
+
+  /* ---テキスト変更時に、zustandstoreに反映&テキストボックスリサイズする処理--- */
   const textAreaRef = useRef<HTMLTextAreaElement>(null) //ノードのテキストへのrefへのref
 
   const resizeTextArea = (el: HTMLTextAreaElement, text: string) => {
@@ -118,7 +137,11 @@ function CustomNode({ id, data }: NodeProps<Node<NodeData>>) {
       ref={nodeRef}
       onMouseMove={handleMouseMove}
       onMouseLeave={handleMouseLeave}
-      className="relative"
+      onClick={enterEdit}
+      className={clsx(
+        'relative z-[1] border-2',
+        isMovingSelf ? 'border-2 border-dashed border-blue-500' : ''
+      )}
     >
       {isHighlight && hoverPosition === 'left-top' && (
         <div className="pointer-events-none absolute left-0 top-0 z-10 h-1/2 w-4/5 rounded-tl-lg bg-blue-200 opacity-40" />
@@ -130,34 +153,66 @@ function CustomNode({ id, data }: NodeProps<Node<NodeData>>) {
         <div className="pointer-events-none absolute right-0 top-0 z-10 h-full w-1/5 rounded-r-lg bg-yellow-200 opacity-40" />
       )}
 
-      <div className="flex justify-end gap-2">
-        {data.parentId && (
+      <div className="flex items-center justify-between">
+        {/* 左端に表示 */}
+        {isMovingSelf ? (
+          <span className="ml-3 animate-pulse text-sm font-semibold text-blue-500">
+            {' '}
+            移動中...
+          </span>
+        ) : (
+          <span /> // スペース保持のため（isMovingSelfがfalseでも左端に空要素を維持）
+        )}
+
+        {/* 右端のボタン群 */}
+        <div className="flex items-center gap-2">
+          {data.parentId && (
+            <button
+              type="button"
+              onClick={() => addVerticalElement(id, data.parentId!)}
+              className="relative z-[2]"
+            >
+              <CiCirclePlus size={20} />
+            </button>
+          )}
+
           <button
             type="button"
-            onClick={() => addVerticalElement(id, data.parentId!)}
+            onClick={() => addHorizontalElement(id)}
+            className="relative z-[2]"
           >
             <CiCirclePlus size={20} />
           </button>
-        )}
 
-        <button type="button" onClick={() => addHorizontalElement(id)}>
-          <CiCirclePlus size={20} />
-        </button>
-
-        <MdOutlineCheckBox size={20} />
-        <RiKanbanView2 size={20} />
-        <FaRegCommentDots size={20} />
+          <MdOutlineCheckBox size={20} />
+          <RiKanbanView2 size={20} />
+          <FaRegCommentDots size={20} />
+        </div>
       </div>
 
       <textarea
+        ref={textAreaRef}
         value={data.label}
         onChange={handleChange}
-        ref={textAreaRef}
-        className="w-60 resize-none overflow-hidden px-3 pt-1 text-center text-2xl"
+        onBlur={leaveEdit}
+        readOnly={!isEditing}
+        onKeyDown={(e) => {
+          if (e.ctrlKey && e.key === 'Enter') {
+            e.preventDefault()
+            textAreaRef.current?.blur()
+          } //Ctrl + Enterで入力完了
+        }}
+        className={textAreaCls}
       />
 
       <Handle type="target" position={Position.Left} />
-      <Handle type="source" position={Position.Right} />
+      <Handle
+        type="source"
+        position={Position.Right}
+        className={
+          isEditing ? 'pointer-events-none' : 'pointer-events-auto z-0'
+        }
+      />
     </div>
   )
 }
