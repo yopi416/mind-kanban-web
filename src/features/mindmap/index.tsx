@@ -159,7 +159,7 @@ function MindMap() {
         onConnectStart={onConnectStart}
         onConnectEnd={onConnectEnd}
         nodeTypes={nodeTypes}
-        connectionLineStyle={{ stroke: 'red', strokeWidth: 5 }}
+        connectionLineStyle={{ display: 'none' }}
         // nodeOrigin={nodeOrigin}
         // nodesDraggable={false}
         // fitView
