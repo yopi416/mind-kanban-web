@@ -103,6 +103,7 @@ const useMindMapStore = create(
       const newNode: Node<NodeData> = createNode(newNodeId, parentId)
       const newEdge: Edge = createEdge(parentId, newNodeId)
 
+      // storeに反映 & new nodeをfocus
       set({
         nodes: insertAfter<Node<NodeData>>(
           currentNodes,
@@ -115,6 +116,10 @@ const useMindMapStore = create(
           findBottomEdgeIdx(parentId, currentEdges)
         ),
       })
+
+      setTimeout(() => {
+        set({ focusedNodeId: newNodeId })
+      }, 0)
     },
     addVerticalElement: (aboveNodeId: string, parentId: string) => {
       const currentNodes = get().nodes
@@ -138,6 +143,7 @@ const useMindMapStore = create(
       const newNode: Node<NodeData> = createNode(newNodeId, parentId)
       const newEdge: Edge = createEdge(parentId, newNodeId)
 
+      // storeに反映 & new nodeをfocus
       set({
         nodes: insertAfter<Node<NodeData>>(
           currentNodes,
@@ -145,7 +151,12 @@ const useMindMapStore = create(
           aboveNodeIdx
         ),
         edges: insertAfter<Edge>(currentEdges, [newEdge], aboveEdgeIdx),
+        focusedNodeId: newNodeId,
       })
+
+      setTimeout(() => {
+        set({ focusedNodeId: newNodeId })
+      }, 0)
     },
     moveNodeTobeChild: (movingNodeId: string, parentId: string) => {
       //変更前ノード・エッジの取得
