@@ -154,3 +154,71 @@ export function getEdgesExcludingSubtree(
 
   return edgesExcludingSubtree
 }
+
+// 子ノードの最上ノードIDを取得
+export function getTopNodeIdByParentId(
+  parentId: string,
+  nodes: Node<NodeData>[]
+): string | null {
+  if (parentId === undefined || parentId === null) {
+    return null
+  }
+
+  const topNode = nodes.find((node) => node.data.parentId === parentId) //parentId無しでも成立
+  return topNode ? topNode.id : null
+}
+
+// 1つ上のノードIDを取得
+export function getAboveNodeId(
+  belowNodeId: string,
+  nodes: Node<NodeData>[]
+): string | null {
+  // belowNodeのIdxを取得
+  const belowNodeIdx = nodes.findIndex((node) => node.id === belowNodeId)
+
+  if (belowNodeIdx === -1) {
+    return null
+  }
+  // belowNodeの親ノードのIDを取得
+  const parentId = getParentIdById(belowNodeId, nodes)
+
+  if (parentId === null) {
+    return null
+  }
+
+  // belowNodeIdxから、その前に存在する共通のparentIdを持つnodeIDの取得
+  for (let i = belowNodeIdx - 1; i >= 0; i--) {
+    if (nodes[i].data.parentId === parentId) {
+      return nodes[i].id
+    }
+  }
+
+  return null
+}
+
+// 1つ下のノードを取得
+export function getBelowNodeId(
+  aboveNodeId: string,
+  nodes: Node<NodeData>[]
+): string | null {
+  // aboveNodeのIdxを取得
+  const aboveNodeIdx = nodes.findIndex((node) => node.id === aboveNodeId)
+  if (aboveNodeIdx === -1) {
+    return null
+  }
+
+  // aboveNodeの親ノードのIDを取得
+  const parentId = getParentIdById(aboveNodeId, nodes)
+  if (parentId === null) {
+    return null
+  }
+
+  // aboveNodeIdxから、その後に存在する共通のparentIdを持つnodeIDの取得
+  for (let i = aboveNodeIdx + 1; i < nodes.length; i++) {
+    if (nodes[i].data.parentId === parentId) {
+      return nodes[i].id
+    }
+  }
+
+  return null
+}

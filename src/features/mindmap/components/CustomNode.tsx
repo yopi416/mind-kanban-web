@@ -9,6 +9,7 @@ import { CiCirclePlus } from 'react-icons/ci' //plusIcon
 import useMindMapStore, { type MindMapStore } from '../store'
 import { useShallow } from 'zustand/shallow'
 import clsx from 'clsx'
+// import { set } from 'lodash'
 
 export type NodeData = {
   label: string
@@ -21,14 +22,35 @@ const selector = (store: MindMapStore) => ({
   updateNodeLabel: store.updateNodeLabel,
   addHorizontalElement: store.addHorizontalElement,
   addVerticalElement: store.addVerticalElement,
+  setFocusedNodeId: store.setFocusedNodeId,
 })
 
 function CustomNode({ id, data }: NodeProps<Node<NodeData>>) {
   console.log(`customeNode "${id}" が再レンダリング`)
 
   /* zustan-storeから呼び出し */
-  const { updateNodeLabel, addHorizontalElement, addVerticalElement } =
-    useMindMapStore(useShallow(selector))
+  const {
+    updateNodeLabel,
+    addHorizontalElement,
+    addVerticalElement,
+    setFocusedNodeId,
+  } = useMindMapStore(useShallow(selector))
+
+  /* 自ノードがfocus時に枠色を強調 */
+  const [isFocused, setIsFocused] = useState(false) //自ノードがフォーカスされているかのフラグ
+
+  useEffect(() => {
+    const unsub = useMindMapStore.subscribe(
+      (state) => state.focusedNodeId,
+      (newId) => {
+        setIsFocused(newId === id)
+        console.log(newId === id)
+      },
+      { fireImmediately: true }
+    )
+
+    return () => unsub()
+  }, [id])
 
   /* ノードの付け替え時に色を付ける処理 */
   const [hoverPosition, setHoverPosition] = useState<HoverZone>(null)
@@ -36,17 +58,21 @@ function CustomNode({ id, data }: NodeProps<Node<NodeData>>) {
 
   const nodeRef = useRef<HTMLDivElement>(null) //ノード全体をwrapするdivへのref
   const movingNodeIdRef = useRef<string | null>(null)
-  const isMovingSelf = movingNodeIdRef.current === id //自のノードが移動されているかのフラグ
+
+  const [isMovingSelf, setIsMovingSelf] = useState(false) //自ノードが移動されているかのフラグ
 
   useEffect(() => {
     const unsub = useMindMapStore.subscribe(
       (state) => state.movingNodeId,
-      (newId) => (movingNodeIdRef.current = newId),
+      (newId) => {
+        movingNodeIdRef.current = newId
+        setIsMovingSelf(newId === id)
+      },
       { fireImmediately: true }
     )
 
     return () => unsub()
-  }, [])
+  }, [id])
 
   const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
     if (!nodeRef.current) return
@@ -91,10 +117,14 @@ function CustomNode({ id, data }: NodeProps<Node<NodeData>>) {
 
   // 編集モードへ移行するクリックハンドラ
   const enterEdit = () => {
-    setIsEditing(true)
+    if (isFocused) {
+      setIsEditing(true)
 
-    // フォーカスを当てる(enterEdit終了後?に実行)
-    setTimeout(() => textAreaRef.current?.focus(), 0)
+      // フォーカスを当てる(enterEdit終了後?に実行)
+      setTimeout(() => textAreaRef.current?.focus(), 0)
+    } else {
+      setFocusedNodeId(id)
+    }
   }
 
   // blur(focusが外れた時)で編集終了
@@ -140,6 +170,7 @@ function CustomNode({ id, data }: NodeProps<Node<NodeData>>) {
       onClick={enterEdit}
       className={clsx(
         'relative z-[1] border-2',
+        isFocused ? 'ring-2 ring-blue-500' : '',
         isMovingSelf ? 'border-2 border-dashed border-blue-500' : ''
       )}
     >
@@ -196,7 +227,14 @@ function CustomNode({ id, data }: NodeProps<Node<NodeData>>) {
         onChange={handleChange}
         onBlur={leaveEdit}
         readOnly={!isEditing}
+        tabIndex={isEditing ? 0 : -1} // 編集中以外はフォーカス対象外
         onKeyDown={(e) => {
+          if (
+            ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.key)
+          ) {
+            e.stopPropagation() // textarea入力中は上位に矢印キーの伝播を止める
+          }
+
           if (e.ctrlKey && e.key === 'Enter') {
             e.preventDefault()
             textAreaRef.current?.blur()

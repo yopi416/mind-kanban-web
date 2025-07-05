@@ -14,7 +14,13 @@ import CustomNode from './components/CustomNode'
 import { getLayoutedNodes } from './utils/dagreLayout'
 
 import { isEqual } from 'lodash'
-import { collectDescendantIds, getParentIdById } from './utils/nodeTreeUtils'
+import {
+  collectDescendantIds,
+  getParentIdById,
+  getTopNodeIdByParentId,
+  getAboveNodeId,
+  getBelowNodeId,
+} from './utils/nodeTreeUtils'
 
 import '@xyflow/react/dist/style.css'
 
@@ -29,6 +35,8 @@ const selector = (store: MindMapStore) => ({
   moveNodeBelowTarget: store.moveNodeBelowTarget,
   moveNodeAboveTarget: store.moveNodeAboveTarget,
   setMovingNodeId: store.setMovingNodeId,
+  focusedNodeId: store.focusedNodeId,
+  setFocusedNodeId: store.setFocusedNodeId,
 })
 
 const nodeTypes = {
@@ -50,6 +58,7 @@ function MindMap() {
     moveNodeBelowTarget,
     moveNodeAboveTarget,
     setMovingNodeId,
+    setFocusedNodeId,
   } = useMindMapStore(useShallow(selector))
 
   // ノードの付け替え（ドラッグ開始時）の処理
@@ -123,6 +132,8 @@ function MindMap() {
               console.log('Bottom')
             }
           }
+
+          setFocusedNodeId(movingNodeId)
         }
       } finally {
         setMovingNodeId(null)
@@ -130,13 +141,14 @@ function MindMap() {
     },
     [
       setMovingNodeId,
+      setFocusedNodeId,
       moveNodeTobeChild,
       moveNodeBelowTarget,
       moveNodeAboveTarget,
     ]
   )
 
-  //全ノードが計測済み（node.measuredが格納されたら）になったらdagreによるレイアウト実行
+  // 全ノードが計測済み（node.measuredが格納されたら）になったらdagreによるレイアウト実行
   useEffect(() => {
     if (nodes.length && nodes.every((node) => node.measured)) {
       const layoutedNodes = getLayoutedNodes(nodes, edges, 'LR')
@@ -147,6 +159,53 @@ function MindMap() {
       }
     }
   }, [nodes, edges, setNodes])
+
+  // Focusノードを矢印キーで移動
+  useEffect(() => {
+    const handleKey = (e: KeyboardEvent) => {
+      const { focusedNodeId, nodes, setFocusedNodeId } =
+        useMindMapStore.getState()
+
+      if (!focusedNodeId) {
+        return
+      }
+
+      let nextId: string | null = null
+
+      switch (e.key) {
+        case 'ArrowUp':
+          console.log('↑')
+          nextId = getAboveNodeId(focusedNodeId, nodes)
+
+          break
+
+        case 'ArrowDown':
+          console.log('↓')
+          nextId = getBelowNodeId(focusedNodeId, nodes)
+          break
+
+        case 'ArrowRight':
+          console.log('→')
+          nextId = getTopNodeIdByParentId(focusedNodeId, nodes)
+          break
+
+        case 'ArrowLeft':
+          nextId = getParentIdById(focusedNodeId, nodes)
+          break
+
+        default:
+          return
+      }
+
+      if (nextId) {
+        setFocusedNodeId(nextId)
+        e.preventDefault()
+      }
+    }
+
+    window.addEventListener('keydown', handleKey)
+    return () => window.removeEventListener('keydown', handleKey)
+  }, [])
 
   return (
     <div style={{ height: '100%' }}>
@@ -161,7 +220,7 @@ function MindMap() {
         nodeTypes={nodeTypes}
         connectionLineStyle={{ display: 'none' }}
         // nodeOrigin={nodeOrigin}
-        // nodesDraggable={false}
+        nodesDraggable={false}
         // fitView
       >
         <Background />
