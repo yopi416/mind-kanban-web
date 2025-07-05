@@ -51,8 +51,10 @@ export type MindMapStore = {
     parentId: string
   ) => void
   updateNodeLabel: (nodeId: string, label: string) => void
-  movingNodeId: string | null
+  movingNodeId: string | null //移動するためにドラッグしているノード
   setMovingNodeId: (nodeId: string | null) => void
+  focusedNodeId: string | null //focus中のノード
+  setFocusedNodeId: (nodeId: string | null) => void
 }
 
 const useMindMapStore = create(
@@ -413,6 +415,12 @@ const useMindMapStore = create(
     setMovingNodeId: (nodeId: string | null) => {
       set({
         movingNodeId: nodeId,
+      })
+    },
+    focusedNodeId: null,
+    setFocusedNodeId: (nodeId: string | null) => {
+      set({
+        focusedNodeId: nodeId,
       })
     },
   }))
