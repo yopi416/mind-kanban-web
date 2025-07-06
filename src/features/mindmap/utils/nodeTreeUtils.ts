@@ -1,5 +1,5 @@
 import { type Node, type Edge } from '@xyflow/react'
-import { type NodeData } from '../components/CustomNode'
+import { type NodeData } from '../../../types'
 
 //引数のノード配列の子ノードID・孫ノードID・・・を収集
 export function collectDescendantIds(

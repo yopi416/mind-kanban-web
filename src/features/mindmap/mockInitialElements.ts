@@ -1,52 +1,55 @@
+import type { Node, Edge } from '@xyflow/react'
+import { type NodeData } from '../../types'
+
 const position = { x: 0, y: 0 }
 const edgeType = 'smoothstep'
 
-export const initialNodes = [
+export const initialNodes: Node<NodeData>[] = [
   {
     id: '1',
     type: 'custom',
-    data: { label: 'input', parentId: null },
+    data: { label: 'input', parentId: null, comments: [] },
     position,
   },
   {
     id: '2',
     type: 'custom',
-    data: { label: 'node 2', parentId: '1' },
+    data: { label: 'node 2', parentId: '1', comments: [] },
     position,
   },
   {
     id: '2a',
     type: 'custom',
-    data: { label: 'node 2a', parentId: '2' },
+    data: { label: 'node 2a', parentId: '2', comments: [] },
     position,
   },
   {
     id: '2b',
     type: 'custom',
-    data: { label: 'node 2b', parentId: '2' },
+    data: { label: 'node 2b', parentId: '2', comments: [] },
     position,
   },
   {
     id: '2c',
     type: 'custom',
-    data: { label: 'node 2c', parentId: '2' },
+    data: { label: 'node 2c', parentId: '2', comments: [] },
     position,
   },
   {
     id: '2d',
     type: 'custom',
-    data: { label: 'node 2d', parentId: '2c' },
+    data: { label: 'node 2d', parentId: '2c', comments: [] },
     position,
   },
   {
     id: '3',
     type: 'custom',
-    data: { label: 'node 3', parentId: '1' },
+    data: { label: 'node 3', parentId: '1', comments: [] },
     position,
   },
 ]
 
-export const initialEdges = [
+export const initialEdges: Edge[] = [
   { id: 'e_1_2', source: '1', target: '2', type: edgeType },
   { id: 'e_1_3', source: '1', target: '3', type: edgeType },
   { id: 'e_2_2a', source: '2', target: '2a', type: edgeType },
