@@ -1,7 +1,7 @@
 import { useRef, useState, useLayoutEffect, useEffect } from 'react'
 import { Handle, Position, type Node, type NodeProps } from '@xyflow/react'
 import { RiKanbanView2 } from 'react-icons/ri' //kanbanIcon
-import { MdOutlineCheckBox } from 'react-icons/md' //checkIcon
+// import { MdOutlineCheckBox } from 'react-icons/md' //checkIcon
 // import { MdOutlineTextRotationAngleup } from 'react-icons/md' //checkIcon
 // import { MdOutlineCheckBoxOutlineBlank} from "react-icons/md"; //checkIcon
 import { CiCirclePlus } from 'react-icons/ci' //plusIcon
@@ -10,6 +10,7 @@ import { useShallow } from 'zustand/shallow'
 import clsx from 'clsx'
 import { type NodeData, type MindMapStore } from '../../../types.ts'
 import { CommentPopover } from './CommentPopover.tsx'
+import { Checkbox } from '@/components/ui/checkbox'
 // import { set } from 'lodash'
 
 type HoverZone = 'left-top' | 'left-bottom' | 'right' | null
@@ -19,6 +20,7 @@ const selector = (store: MindMapStore) => ({
   addHorizontalElement: store.addHorizontalElement,
   addVerticalElement: store.addVerticalElement,
   setFocusedNodeId: store.setFocusedNodeId,
+  updateIsDone: store.updateIsDone,
 })
 
 function CustomNode({ id, data }: NodeProps<Node<NodeData>>) {
@@ -30,6 +32,7 @@ function CustomNode({ id, data }: NodeProps<Node<NodeData>>) {
     addHorizontalElement,
     addVerticalElement,
     setFocusedNodeId,
+    updateIsDone,
   } = useMindMapStore(useShallow(selector))
 
   /* 自ノードがfocus時に枠色を強調 */
@@ -167,7 +170,8 @@ function CustomNode({ id, data }: NodeProps<Node<NodeData>>) {
       className={clsx(
         'relative z-[1] border-2',
         isFocused ? 'ring-2 ring-blue-500' : '',
-        isMovingSelf ? 'border-2 border-dashed border-blue-500' : ''
+        isMovingSelf ? 'border-2 border-dashed border-blue-500' : '',
+        data.isDone ? 'bg-gray-200' : ''
       )}
     >
       {isHighlight && hoverPosition === 'left-top' && (
@@ -211,13 +215,15 @@ function CustomNode({ id, data }: NodeProps<Node<NodeData>>) {
             <CiCirclePlus size={20} />
           </button>
 
-          <button
-            type="button"
-            onClick={() => console.log(data)}
-            className="relative z-[2]"
-          >
-            <MdOutlineCheckBox size={20} />
-          </button>
+          <Checkbox
+            checked={data.isDone}
+            onClick={(e) => e.stopPropagation()}
+            onCheckedChange={(checked) => updateIsDone(id, !!checked)}
+            className={clsx(
+              'relative z-[2]',
+              !data.isDone && 'border-gray-600'
+            )}
+          />
 
           <RiKanbanView2 size={20} />
           <CommentPopover id={id} data={data} />
