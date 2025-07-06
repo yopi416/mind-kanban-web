@@ -15,6 +15,7 @@ export type NodeComment = {
 export type NodeData = {
   label: string
   parentId?: string | null
+  isDone: boolean
   comments: NodeComment[]
 }
 
@@ -43,6 +44,7 @@ export type MindMapStore = {
   setMovingNodeId: (nodeId: string | null) => void
   focusedNodeId: string | null //focus中のノード
   setFocusedNodeId: (nodeId: string | null) => void
+  updateIsDone: (nodeId: string, isDone: boolean) => void
   addComment: (nodeId: string, content: string) => void
   editComment: (
     nodeId: string,

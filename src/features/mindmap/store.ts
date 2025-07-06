@@ -405,6 +405,23 @@ const useMindMapStore = create(
         focusedNodeId: nodeId,
       })
     },
+    updateIsDone: (nodeId: string, isDone: boolean) => {
+      const currentNodes = get().nodes
+
+      set({
+        nodes: currentNodes.map((node) => {
+          if (node.id !== nodeId) return node
+
+          return {
+            ...node,
+            data: {
+              ...node.data,
+              isDone,
+            },
+          }
+        }),
+      })
+    },
     addComment: (nodeId: string, content: string) => {
       const currentNodes = get().nodes
 
