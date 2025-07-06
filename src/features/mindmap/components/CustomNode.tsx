@@ -4,17 +4,13 @@ import { RiKanbanView2 } from 'react-icons/ri' //kanbanIcon
 import { MdOutlineCheckBox } from 'react-icons/md' //checkIcon
 // import { MdOutlineTextRotationAngleup } from 'react-icons/md' //checkIcon
 // import { MdOutlineCheckBoxOutlineBlank} from "react-icons/md"; //checkIcon
-import { FaRegCommentDots } from 'react-icons/fa' //commentIcon
 import { CiCirclePlus } from 'react-icons/ci' //plusIcon
-import useMindMapStore, { type MindMapStore } from '../store'
+import useMindMapStore from '../store'
 import { useShallow } from 'zustand/shallow'
 import clsx from 'clsx'
+import { type NodeData, type MindMapStore } from '../../../types.ts'
+import { CommentPopover } from './CommentPopover.tsx'
 // import { set } from 'lodash'
-
-export type NodeData = {
-  label: string
-  parentId?: string | null
-}
 
 type HoverZone = 'left-top' | 'left-bottom' | 'right' | null
 
@@ -215,9 +211,17 @@ function CustomNode({ id, data }: NodeProps<Node<NodeData>>) {
             <CiCirclePlus size={20} />
           </button>
 
-          <MdOutlineCheckBox size={20} />
+          <button
+            type="button"
+            onClick={() => console.log(data)}
+            className="relative z-[2]"
+          >
+            <MdOutlineCheckBox size={20} />
+          </button>
+
           <RiKanbanView2 size={20} />
-          <FaRegCommentDots size={20} />
+          <CommentPopover id={id} data={data} />
+          {/* <FaRegCommentDots size={20} /> */}
         </div>
       </div>
 

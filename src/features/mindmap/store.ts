@@ -5,11 +5,9 @@ import {
   type EdgeChange,
   type Node,
   type NodeChange,
-  type OnNodesChange,
-  type OnEdgesChange,
-  type OnNodesDelete,
 } from '@xyflow/react'
 import { create } from 'zustand'
+import { type MindMapStore, type NodeComment } from '../../types'
 import {
   collectDescendantIds,
   findBottomNodeIdx,
@@ -23,39 +21,12 @@ import {
 } from './utils/nodeTreeUtils'
 
 import { initialNodes, initialEdges } from './mockInitialElements'
-import { type NodeData } from './components/CustomNode'
+import { type NodeData } from '../../types'
 import { nanoid } from 'nanoid'
 import { createEdge, createNode } from './utils/elementFactory'
 import { insertAfter, insertBefore } from './utils/arrayUtils'
 
 import { subscribeWithSelector } from 'zustand/middleware'
-
-export type MindMapStore = {
-  nodes: Node<NodeData>[]
-  edges: Edge[]
-  onNodesChange: OnNodesChange<Node<NodeData>>
-  onEdgesChange: OnEdgesChange
-  onNodesDelete: OnNodesDelete<Node<NodeData>>
-  setNodes: (nodes: Node<NodeData>[]) => void
-  addHorizontalElement: (parentId: string) => void
-  addVerticalElement: (aboveNodeId: string, parentId: string) => void
-  moveNodeTobeChild: (movingNodeId: string, parentId: string) => void
-  moveNodeAboveTarget: (
-    movingNodeId: string,
-    belowNodeId: string,
-    parentId: string
-  ) => void
-  moveNodeBelowTarget: (
-    movingNodeId: string,
-    aboveNodeId: string,
-    parentId: string
-  ) => void
-  updateNodeLabel: (nodeId: string, label: string) => void
-  movingNodeId: string | null //移動するためにドラッグしているノード
-  setMovingNodeId: (nodeId: string | null) => void
-  focusedNodeId: string | null //focus中のノード
-  setFocusedNodeId: (nodeId: string | null) => void
-}
 
 const useMindMapStore = create(
   subscribeWithSelector<MindMapStore>((set, get) => ({
@@ -432,6 +403,82 @@ const useMindMapStore = create(
     setFocusedNodeId: (nodeId: string | null) => {
       set({
         focusedNodeId: nodeId,
+      })
+    },
+    addComment: (nodeId: string, content: string) => {
+      const currentNodes = get().nodes
+
+      const newComment: NodeComment = {
+        id: nanoid(),
+        content,
+        createdAt: new Date().toISOString(),
+      }
+
+      const updatedNodes: Node<NodeData>[] = currentNodes.map((node) => {
+        if (node.id !== nodeId) return node
+
+        return {
+          ...node,
+          data: {
+            ...node.data,
+            comments: [...node.data.comments, newComment],
+          },
+        }
+      })
+
+      set({
+        nodes: updatedNodes,
+      })
+    },
+    editComment: (
+      nodeId: string,
+      commentId: string,
+      updatedContent: string
+    ) => {
+      const currentNodes = get().nodes
+
+      const updatedNodes: Node<NodeData>[] = currentNodes.map((node) => {
+        if (node.id !== nodeId) return node
+
+        return {
+          ...node,
+          data: {
+            ...node.data,
+            comments: node.data.comments.map((c) => {
+              if (c.id !== commentId) return c
+
+              return {
+                ...c,
+                content: updatedContent,
+              }
+            }),
+          },
+        }
+      })
+
+      set({
+        nodes: updatedNodes,
+      })
+    },
+    deleteComment: (nodeId: string, commentId: string) => {
+      const currentNodes = get().nodes
+
+      const updatedNodes: Node<NodeData>[] = currentNodes.map((node) => {
+        if (node.id !== nodeId) return node
+
+        return {
+          ...node,
+          data: {
+            ...node.data,
+            comments: node.data.comments.filter(
+              (comment) => comment.id !== commentId
+            ),
+          },
+        }
+      })
+
+      set({
+        nodes: updatedNodes,
       })
     },
   }))

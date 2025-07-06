@@ -1,6 +1,6 @@
 import dagre from '@dagrejs/dagre'
 import { type Node, type Edge, Position } from '@xyflow/react'
-import type { NodeData } from '../components/CustomNode'
+import type { NodeData } from '../../../types'
 
 const FALLBACK_W = 160
 const FALLBACK_H = 40
