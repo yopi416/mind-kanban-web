@@ -1,6 +1,6 @@
 import { useState } from 'react'
 
-import { type NodeData } from '@/types'
+import { type NodeData, type MindMapStore } from '@/types'
 import useMindMapStore from '../store'
 
 import {
@@ -16,14 +16,33 @@ import { Separator } from '@/components/ui/separator'
 import { format } from 'date-fns'
 import { FaRegCommentDots } from 'react-icons/fa'
 import { FiTrash2 } from 'react-icons/fi'
+import { useShallow } from 'zustand/shallow'
 
 type CommentPopoverProps = {
   id: string
   data: NodeData
+  open: boolean
+  onOpenChange: (open: boolean) => void
 }
 
-export function CommentPopover({ id, data }: CommentPopoverProps) {
-  const { addComment, editComment, deleteComment } = useMindMapStore()
+const selector = (store: MindMapStore) => ({
+  addComment: store.addComment,
+  editComment: store.editComment,
+  deleteComment: store.deleteComment,
+})
+
+export function CommentPopover({
+  id,
+  data,
+  open,
+  onOpenChange,
+}: CommentPopoverProps) {
+  // console.log("re-lendaring:", id)
+  // console.log(`${new Date().toLocaleString()} 再描画:`, id)
+
+  const { addComment, editComment, deleteComment } = useMindMapStore(
+    useShallow(selector)
+  )
   const [draft, setDraft] = useState<string>('')
   const [editingId, setEditingId] = useState<string | null>(null)
   const [editDraft, setEditDraft] = useState<string>('')
@@ -40,7 +59,7 @@ export function CommentPopover({ id, data }: CommentPopoverProps) {
   }
 
   return (
-    <Popover>
+    <Popover open={open} onOpenChange={onOpenChange}>
       <PopoverTrigger asChild>
         <button
           type="button"
@@ -90,6 +109,9 @@ export function CommentPopover({ id, data }: CommentPopoverProps) {
                       value={editDraft}
                       className="mt-1 rounded-md px-3 py-2 text-sm leading-relaxed"
                       onChange={(e) => setEditDraft(e.target.value)}
+                      onKeyDown={(e) => {
+                        e.stopPropagation()
+                      }}
                       maxLength={100}
                     />
                     <p className="text-right text-xs text-gray-500">
@@ -105,6 +127,7 @@ export function CommentPopover({ id, data }: CommentPopoverProps) {
                           setEditDraft('')
                           setEditingId(null)
                         }}
+                        onKeyDown={(e) => e.stopPropagation()}
                       >
                         保存
                       </Button>
@@ -113,6 +136,7 @@ export function CommentPopover({ id, data }: CommentPopoverProps) {
                         variant="ghost"
                         className="border text-gray-400 hover:text-red-500"
                         onClick={handleCancel}
+                        onKeyDown={(e) => e.stopPropagation()}
                       >
                         キャンセル
                       </Button>
@@ -142,11 +166,21 @@ export function CommentPopover({ id, data }: CommentPopoverProps) {
             placeholder="コメントを追加..."
             value={draft}
             onChange={(e) => setDraft(e.target.value)}
+            onKeyDown={(e) => {
+              e.stopPropagation() // ショートカット反応を防ぐ
+            }}
             maxLength={100}
             className="min-h-[5rem] rounded-md text-sm shadow-sm focus:outline-none focus:ring focus:ring-blue-200"
           />
           <p className="text-right text-xs text-gray-500">{draft.length}/100</p>
-          <Button size="sm" className="w-full" onClick={handleSubmit}>
+          <Button
+            size="sm"
+            className="w-full"
+            onClick={handleSubmit}
+            onKeyDown={(e) => {
+              e.stopPropagation()
+            }}
+          >
             送信
           </Button>
         </div>

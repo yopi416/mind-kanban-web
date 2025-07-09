@@ -5,7 +5,7 @@ export function createNode(id: string, parentId: string): Node<NodeData> {
   return {
     id,
     type: 'custom',
-    data: { label: '', parentId, comments: [] },
+    data: { label: '', parentId, isDone: false, comments: [] },
     position: { x: 0, y: 0 },
   }
 }

@@ -20,11 +20,13 @@ const selector = (store: MindMapStore) => ({
   addHorizontalElement: store.addHorizontalElement,
   addVerticalElement: store.addVerticalElement,
   setFocusedNodeId: store.setFocusedNodeId,
+  setEditingNodeId: store.setEditingNodeId,
+  setCommentPopupId: store.setCommentPopupId,
   updateIsDone: store.updateIsDone,
 })
 
 function CustomNode({ id, data }: NodeProps<Node<NodeData>>) {
-  console.log(`customeNode "${id}" が再レンダリング`)
+  console.log(`${new Date().toLocaleString()} 再描画:`, id)
 
   /* zustan-storeから呼び出し */
   const {
@@ -32,18 +34,35 @@ function CustomNode({ id, data }: NodeProps<Node<NodeData>>) {
     addHorizontalElement,
     addVerticalElement,
     setFocusedNodeId,
+    setEditingNodeId,
+    setCommentPopupId,
     updateIsDone,
   } = useMindMapStore(useShallow(selector))
 
   /* 自ノードがfocus時に枠色を強調 */
-  const [isFocused, setIsFocused] = useState(false) //自ノードがフォーカスされているかのフラグ
+  const [isFocused, setIsFocused] = useState<boolean>(false) //自ノードがフォーカスされているかのフラグ
 
   useEffect(() => {
     const unsub = useMindMapStore.subscribe(
       (state) => state.focusedNodeId,
       (newId) => {
         setIsFocused(newId === id)
-        console.log(newId === id)
+      },
+      { fireImmediately: true }
+    )
+
+    return () => unsub()
+  }, [id])
+
+  /* 編集モードがフラグがたったら、編集モードへ移行 */
+  useEffect(() => {
+    const unsub = useMindMapStore.subscribe(
+      (state) => state.editingNodeId,
+      (newId) => {
+        if (newId === id) {
+          setIsEditing(true)
+          setTimeout(() => textAreaRef.current?.focus(), 0)
+        }
       },
       { fireImmediately: true }
     )
@@ -117,17 +136,32 @@ function CustomNode({ id, data }: NodeProps<Node<NodeData>>) {
   // 編集モードへ移行するクリックハンドラ
   const enterEdit = () => {
     if (isFocused) {
-      setIsEditing(true)
-
-      // フォーカスを当てる(enterEdit終了後?に実行)
-      setTimeout(() => textAreaRef.current?.focus(), 0)
+      setEditingNodeId(id)
     } else {
       setFocusedNodeId(id)
     }
   }
 
   // blur(focusが外れた時)で編集終了
-  const leaveEdit = () => setIsEditing(false)
+  const leaveEdit = () => {
+    setIsEditing(false)
+    setEditingNodeId(null)
+  }
+
+  /* --- コメントポップアップ用 --- */
+  const [isPopupOpen, setIsPopupOpen] = useState<boolean>(false)
+
+  useEffect(() => {
+    const unsub = useMindMapStore.subscribe(
+      (state) => state.commentPopupId,
+      (newId) => {
+        setIsPopupOpen(newId === id)
+      },
+      { fireImmediately: true }
+    )
+
+    return () => unsub()
+  }, [id])
 
   /* ---テキスト変更時に、zustandstoreに反映&テキストボックスリサイズする処理--- */
   const textAreaRef = useRef<HTMLTextAreaElement>(null) //ノードのテキストへのrefへのref
@@ -163,6 +197,7 @@ function CustomNode({ id, data }: NodeProps<Node<NodeData>>) {
 
   return (
     <div
+      tabIndex={0}
       ref={nodeRef}
       onMouseMove={handleMouseMove}
       onMouseLeave={handleMouseLeave}
@@ -226,7 +261,12 @@ function CustomNode({ id, data }: NodeProps<Node<NodeData>>) {
           />
 
           <RiKanbanView2 size={20} />
-          <CommentPopover id={id} data={data} />
+          <CommentPopover
+            id={id}
+            data={data}
+            open={isPopupOpen} //ポップアップフラグ
+            onOpenChange={(open) => setCommentPopupId(open ? id : null)} //コメントボタン開閉
+          />
           {/* <FaRegCommentDots size={20} /> */}
         </div>
       </div>
@@ -236,19 +276,16 @@ function CustomNode({ id, data }: NodeProps<Node<NodeData>>) {
         value={data.label}
         onChange={handleChange}
         onBlur={leaveEdit}
-        readOnly={!isEditing}
+        // readOnly={!isEditing}
         tabIndex={isEditing ? 0 : -1} // 編集中以外はフォーカス対象外
         onKeyDown={(e) => {
-          if (
-            ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.key)
-          ) {
-            e.stopPropagation() // textarea入力中は上位に矢印キーの伝播を止める
-          }
-
-          if (e.ctrlKey && e.key === 'Enter') {
+          //Ctrl + Enterで入力完了
+          if ((e.ctrlKey && e.key === 'Enter') || e.key === 'Escape') {
             e.preventDefault()
             textAreaRef.current?.blur()
-          } //Ctrl + Enterで入力完了
+          }
+
+          e.stopPropagation() // textarea入力中は上位に矢印キーの伝播を止める
         }}
         className={textAreaCls}
       />
