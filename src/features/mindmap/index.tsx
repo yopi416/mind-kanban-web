@@ -9,7 +9,8 @@ import {
 
 import { useCallback, useEffect } from 'react'
 import { useShallow } from 'zustand/shallow'
-import useMindMapStore, { type MindMapStore } from './store'
+import useMindMapStore from './store'
+import type { MindMapStore } from '@/types'
 import CustomNode from './components/CustomNode'
 import { getLayoutedNodes } from './utils/dagreLayout'
 
@@ -29,14 +30,17 @@ const selector = (store: MindMapStore) => ({
   edges: store.edges,
   onNodesChange: store.onNodesChange,
   onEdgesChange: store.onEdgesChange,
-  onNodesDelete: store.onNodesDelete,
+  deleteNodes: store.deleteNodes,
   setNodes: store.setNodes,
+  addHorizontalElement: store.addHorizontalElement,
+  addVerticalElement: store.addVerticalElement,
   moveNodeTobeChild: store.moveNodeTobeChild,
   moveNodeBelowTarget: store.moveNodeBelowTarget,
   moveNodeAboveTarget: store.moveNodeAboveTarget,
   setMovingNodeId: store.setMovingNodeId,
   focusedNodeId: store.focusedNodeId,
   setFocusedNodeId: store.setFocusedNodeId,
+  updateIsDone: store.updateIsDone,
 })
 
 const nodeTypes = {
@@ -46,13 +50,94 @@ const nodeTypes = {
 // this makes the node origin to be in the center of a node
 // const nodeOrigin: NodeOrigin = [0.5, 0.5]
 
+function createShortcuts(
+  state: ReturnType<typeof useMindMapStore.getState>
+): Record<string, () => void> {
+  const {
+    focusedNodeId,
+    nodes,
+    setFocusedNodeId,
+    addHorizontalElement,
+    addVerticalElement,
+    setCommentPopupId,
+    deleteNodes,
+    updateIsDone,
+    setEditingNodeId,
+  } = state
+
+  if (!focusedNodeId) return {}
+
+  /* Delete / Backspace 共通ハンドラを 1 個用意 */
+  const del = () => {
+    if (focusedNodeId === '1') return // ルートは削除不可
+
+    deleteNodes(focusedNodeId)
+
+    /* フォーカスをひとつ上 or 親へ移す */
+    const nextId =
+      getAboveNodeId(focusedNodeId, nodes) ??
+      getParentIdById(focusedNodeId, nodes) ??
+      null
+    setFocusedNodeId(nextId)
+  }
+
+  const shortcuts: Record<string, () => void> = {
+    /* ---フォーカス移動--- */
+    ArrowUp: () => {
+      const nextId = getAboveNodeId(focusedNodeId, nodes)
+      if (nextId) setFocusedNodeId(nextId)
+    },
+    ArrowDown: () => {
+      const nextId = getBelowNodeId(focusedNodeId, nodes)
+      if (nextId) setFocusedNodeId(nextId)
+    },
+    ArrowRight: () => {
+      const nextId = getTopNodeIdByParentId(focusedNodeId, nodes)
+      if (nextId) setFocusedNodeId(nextId)
+    },
+    ArrowLeft: () => {
+      const nextId = getParentIdById(focusedNodeId, nodes)
+      if (nextId) setFocusedNodeId(nextId)
+    },
+
+    /* ---削除--- */
+    Delete: del,
+    Backspace: del,
+
+    /* ---ノード追加--- */
+    Enter: () => {
+      const parentNodeId = getParentIdById(focusedNodeId, nodes)
+      if (parentNodeId) addVerticalElement(focusedNodeId, parentNodeId)
+    },
+    Tab: () => addHorizontalElement(focusedNodeId),
+
+    /* ---タスク完了--- */
+    d: () => {
+      const focusedNode = nodes.find((node) => node.id === focusedNodeId)
+      if (focusedNode) updateIsDone(focusedNodeId, !focusedNode.data.isDone)
+    },
+
+    /* ノードテキスト編集 */
+
+    e: () => {
+      setEditingNodeId(focusedNodeId)
+    },
+
+    /* --- コメントポップアップ --- */
+    m: () => {
+      setCommentPopupId(focusedNodeId)
+    },
+  }
+
+  return shortcuts
+}
+
 function MindMap() {
   const {
     nodes,
     edges,
     onNodesChange,
     onEdgesChange,
-    onNodesDelete,
     setNodes,
     moveNodeTobeChild,
     moveNodeBelowTarget,
@@ -162,43 +247,17 @@ function MindMap() {
 
   // Focusノードを矢印キーで移動
   useEffect(() => {
+    const isComposing = (e: KeyboardEvent) => e.isComposing
+
     const handleKey = (e: KeyboardEvent) => {
-      const { focusedNodeId, nodes, setFocusedNodeId } =
-        useMindMapStore.getState()
+      if (isComposing(e)) return
 
-      if (!focusedNodeId) {
-        return
-      }
+      const state = useMindMapStore.getState()
+      const shortcuts = createShortcuts(state)
 
-      let nextId: string | null = null
-
-      switch (e.key) {
-        case 'ArrowUp':
-          console.log('↑')
-          nextId = getAboveNodeId(focusedNodeId, nodes)
-
-          break
-
-        case 'ArrowDown':
-          console.log('↓')
-          nextId = getBelowNodeId(focusedNodeId, nodes)
-          break
-
-        case 'ArrowRight':
-          console.log('→')
-          nextId = getTopNodeIdByParentId(focusedNodeId, nodes)
-          break
-
-        case 'ArrowLeft':
-          nextId = getParentIdById(focusedNodeId, nodes)
-          break
-
-        default:
-          return
-      }
-
-      if (nextId) {
-        setFocusedNodeId(nextId)
+      const fn = shortcuts[e.key]
+      if (fn) {
+        fn()
         e.preventDefault()
       }
     }
@@ -214,13 +273,15 @@ function MindMap() {
         edges={edges}
         onNodesChange={onNodesChange}
         onEdgesChange={onEdgesChange}
-        onNodesDelete={onNodesDelete}
+        // onNodesDelete={onNodesDelete}
         onConnectStart={onConnectStart}
         onConnectEnd={onConnectEnd}
         nodeTypes={nodeTypes}
+        deleteKeyCode={[]}
         connectionLineStyle={{ display: 'none' }}
         // nodeOrigin={nodeOrigin}
         nodesDraggable={false}
+
         // fitView
       >
         <Background />

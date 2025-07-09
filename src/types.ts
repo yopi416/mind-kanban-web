@@ -1,10 +1,4 @@
-import type {
-  Node,
-  Edge,
-  OnNodesChange,
-  OnEdgesChange,
-  OnNodesDelete,
-} from '@xyflow/react'
+import type { Node, Edge, OnNodesChange, OnEdgesChange } from '@xyflow/react'
 
 export type NodeComment = {
   id: string
@@ -24,7 +18,7 @@ export type MindMapStore = {
   edges: Edge[]
   onNodesChange: OnNodesChange<Node<NodeData>>
   onEdgesChange: OnEdgesChange
-  onNodesDelete: OnNodesDelete<Node<NodeData>>
+  deleteNodes: (nodeIdToDelete: string) => void
   setNodes: (nodes: Node<NodeData>[]) => void
   addHorizontalElement: (parentId: string) => void
   addVerticalElement: (aboveNodeId: string, parentId: string) => void
@@ -44,6 +38,10 @@ export type MindMapStore = {
   setMovingNodeId: (nodeId: string | null) => void
   focusedNodeId: string | null //focus中のノード
   setFocusedNodeId: (nodeId: string | null) => void
+  editingNodeId: string | null //textareaを編集中のノード
+  setEditingNodeId: (nodeId: string | null) => void
+  commentPopupId: string | null //コメントをpopupするノード
+  setCommentPopupId: (nodeId: string | null) => void
   updateIsDone: (nodeId: string, isDone: boolean) => void
   addComment: (nodeId: string, content: string) => void
   editComment: (

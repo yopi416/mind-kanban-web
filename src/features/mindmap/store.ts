@@ -42,21 +42,21 @@ const useMindMapStore = create(
         edges: applyEdgeChanges(changes, get().edges),
       })
     },
-    onNodesDelete: (deletedNodes: Node<NodeData>[]) => {
+    deleteNodes: (nodeIdToDelete: string) => {
       set((state) => {
-        const deletedNodeIds = collectDescendantIds(
-          deletedNodes.map((node) => node.id),
+        const nodeIdsToDelete = collectDescendantIds(
+          [nodeIdToDelete],
           state.nodes
         )
 
         return {
           nodes: state.nodes.filter(
-            (node) => !deletedNodeIds.includes(node.id)
+            (node) => !nodeIdsToDelete.includes(node.id)
           ),
           edges: state.edges.filter(
             (edge) =>
-              !deletedNodeIds.includes(edge.source) &&
-              !deletedNodeIds.includes(edge.target)
+              !nodeIdsToDelete.includes(edge.source) &&
+              !nodeIdsToDelete.includes(edge.target)
           ),
         }
       })
@@ -403,6 +403,18 @@ const useMindMapStore = create(
     setFocusedNodeId: (nodeId: string | null) => {
       set({
         focusedNodeId: nodeId,
+      })
+    },
+    editingNodeId: null,
+    setEditingNodeId: (nodeId: string | null) => {
+      set({
+        editingNodeId: nodeId,
+      })
+    },
+    commentPopupId: null,
+    setCommentPopupId: (nodeId: string | null) => {
+      set({
+        commentPopupId: nodeId,
       })
     },
     updateIsDone: (nodeId: string, isDone: boolean) => {
