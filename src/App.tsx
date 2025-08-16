@@ -1,10 +1,12 @@
-import MindMap from './features/mindmap'
+// import MindMap from './features/mindmap'
 import Kanban from './features/kanban'
+import MindMapPage from './pages/MindMapPage'
 
 function App() {
   return (
     <>
-      <MindMap />
+      <MindMapPage />
+      {/* <MindMap /> */}
       <Kanban />
     </>
   )

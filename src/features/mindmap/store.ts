@@ -510,6 +510,12 @@ const useMindMapStore = create(
         nodes: updatedNodes,
       })
     },
+    showDoneNodes: true,
+    setShowDoneNodes: (show: boolean) => {
+      set({
+        showDoneNodes: show,
+      })
+    },
   }))
 )
 

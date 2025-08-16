@@ -50,4 +50,6 @@ export type MindMapStore = {
     updatedContent: string
   ) => void
   deleteComment: (nodeId: string, commentId: string) => void
+  showDoneNodes: boolean
+  setShowDoneNodes: (show: boolean) => void
 }
