@@ -25,23 +25,27 @@ import {
 
 import '@xyflow/react/dist/style.css'
 
-const selector = (store: MindMapStore) => ({
-  nodes: store.nodes,
-  edges: store.edges,
-  onNodesChange: store.onNodesChange,
-  onEdgesChange: store.onEdgesChange,
-  deleteNodes: store.deleteNodes,
-  setNodes: store.setNodes,
-  addHorizontalElement: store.addHorizontalElement,
-  addVerticalElement: store.addVerticalElement,
-  moveNodeTobeChild: store.moveNodeTobeChild,
-  moveNodeBelowTarget: store.moveNodeBelowTarget,
-  moveNodeAboveTarget: store.moveNodeAboveTarget,
-  setMovingNodeId: store.setMovingNodeId,
-  focusedNodeId: store.focusedNodeId,
-  setFocusedNodeId: store.setFocusedNodeId,
-  updateIsDone: store.updateIsDone,
-})
+const selector = (store: MindMapStore) => {
+  const currentPj = store.projects[store.currentPjId]
+
+  return {
+    nodes: currentPj?.nodes ?? [],
+    edges: currentPj?.edges ?? [],
+    onNodesChange: store.onNodesChange,
+    onEdgesChange: store.onEdgesChange,
+    deleteNodes: store.deleteNodes,
+    setNodes: store.setNodes,
+    addHorizontalElement: store.addHorizontalElement,
+    addVerticalElement: store.addVerticalElement,
+    moveNodeTobeChild: store.moveNodeTobeChild,
+    moveNodeBelowTarget: store.moveNodeBelowTarget,
+    moveNodeAboveTarget: store.moveNodeAboveTarget,
+    setMovingNodeId: store.setMovingNodeId,
+    focusedNodeId: store.focusedNodeId,
+    setFocusedNodeId: store.setFocusedNodeId,
+    updateIsDone: store.updateIsDone,
+  }
+}
 
 const nodeTypes = {
   custom: CustomNode,
@@ -55,7 +59,9 @@ function createShortcuts(
 ): Record<string, () => void> {
   const {
     focusedNodeId,
-    nodes,
+    // nodes,
+    projects,
+    currentPjId,
     setFocusedNodeId,
     addHorizontalElement,
     addVerticalElement,
@@ -66,6 +72,11 @@ function createShortcuts(
   } = state
 
   if (!focusedNodeId) return {}
+
+  const currentPj = projects[currentPjId]
+  if (!currentPj) return {}
+
+  const nodes = currentPj.nodes ?? []
 
   /* Delete / Backspace 共通ハンドラを 1 個用意 */
   const del = () => {
@@ -158,8 +169,17 @@ function MindMap() {
   const onConnectEnd: OnConnectEnd = useCallback(
     (e) => {
       try {
-        const { nodes: currentNodes, movingNodeId: movingNodeId } =
+        // const { nodes: currentNodes, movingNodeId: movingNodeId } =
+        //   useMindMapStore.getState()
+
+        const { projects, currentPjId, movingNodeId } =
           useMindMapStore.getState()
+
+        const currentPj = projects[currentPjId]
+
+        if (!currentPj) return
+
+        const currentNodes = currentPj.nodes ?? []
 
         const target = e.target as HTMLElement
         const targetNodeElement = target.closest('.react-flow__node') //ノード外（該当する親要素がない）場合は null
