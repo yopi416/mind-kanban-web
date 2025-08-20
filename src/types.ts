@@ -13,9 +13,22 @@ export type NodeData = {
   comments: NodeComment[]
 }
 
-export type MindMapStore = {
+export type Project = {
+  id: string
+  name: string
   nodes: Node<NodeData>[]
   edges: Edge[]
+  createdAt: string
+  updatedAt: string
+}
+
+export type Projects = Record<string, Project>
+
+export type MindMapStore = {
+  // nodes: Node<NodeData>[]
+  // edges: Edge[]
+  projects: Projects
+  currentPjId: string
   onNodesChange: OnNodesChange<Node<NodeData>>
   onEdgesChange: OnEdgesChange
   deleteNodes: (nodeIdToDelete: string) => void

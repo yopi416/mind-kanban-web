@@ -7,7 +7,7 @@ import {
   type NodeChange,
 } from '@xyflow/react'
 import { create } from 'zustand'
-import { type MindMapStore, type NodeComment } from '../../types'
+import { type MindMapStore, type NodeComment, type Project } from '../../types'
 import {
   collectDescendantIds,
   findBottomNodeIdx,
@@ -20,81 +20,119 @@ import {
   getEdgesExcludingSubtree,
 } from './utils/nodeTreeUtils'
 
-import { initialNodes, initialEdges } from './mockInitialElements'
+// import { initialNodes, initialEdges } from './mockInitialElements'
+import { initialPjs } from './mockInitialElements'
 import { type NodeData } from '../../types'
 import { nanoid } from 'nanoid'
 import { createEdge, createNode } from './utils/elementFactory'
 import { insertAfter, insertBefore } from './utils/arrayUtils'
+import { getCurrentPj, applyPjChanges } from './utils/projectUtils'
 
 import { subscribeWithSelector } from 'zustand/middleware'
 
 const useMindMapStore = create(
   subscribeWithSelector<MindMapStore>((set, get) => ({
-    nodes: initialNodes,
-    edges: initialEdges,
+    // nodes: initialNodes,
+    // edges: initialEdges,
+    projects: initialPjs,
+    currentPjId: 'pj1',
     onNodesChange: (changes: NodeChange<Node<NodeData>>[]) => {
-      set({
-        nodes: applyNodeChanges<Node<NodeData>>(changes, get().nodes),
-      })
+      const currentPj = getCurrentPj(get)
+
+      applyPjChanges(get, set, (prev: Project) => ({
+        ...prev,
+        nodes: applyNodeChanges<Node<NodeData>>(changes, currentPj.nodes),
+      }))
     },
     onEdgesChange: (changes: EdgeChange[]) => {
-      set({
-        edges: applyEdgeChanges(changes, get().edges),
-      })
+      const currentPj = getCurrentPj(get)
+
+      applyPjChanges(get, set, (prev: Project) => ({
+        ...prev,
+        edges: applyEdgeChanges(changes, currentPj.edges),
+      }))
     },
     deleteNodes: (nodeIdToDelete: string) => {
-      set((state) => {
-        const nodeIdsToDelete = collectDescendantIds(
-          [nodeIdToDelete],
-          state.nodes
-        )
+      const currentPj = getCurrentPj(get)
+      const nodeIdsToDelete = collectDescendantIds(
+        [nodeIdToDelete],
+        currentPj.nodes
+      )
+      const newNodes = currentPj.nodes.filter(
+        (n) => !nodeIdsToDelete.includes(n.id)
+      )
+      const newEdges = currentPj.edges.filter(
+        (e) =>
+          !nodeIdsToDelete.includes(e.source) &&
+          !nodeIdsToDelete.includes(e.target)
+      )
 
-        return {
-          nodes: state.nodes.filter(
-            (node) => !nodeIdsToDelete.includes(node.id)
-          ),
-          edges: state.edges.filter(
-            (edge) =>
-              !nodeIdsToDelete.includes(edge.source) &&
-              !nodeIdsToDelete.includes(edge.target)
-          ),
-        }
-      })
+      applyPjChanges(get, set, (prev) => ({
+        ...prev,
+        nodes: newNodes,
+        edges: newEdges,
+      }))
+
+      // set((state) => {
+      //   const nodeIdsToDelete = collectDescendantIds(
+      //     [nodeIdToDelete],
+      //     state.nodes
+      //   )
+
+      //   return {
+      //     nodes: state.nodes.filter(
+      //       (node) => !nodeIdsToDelete.includes(node.id)
+      //     ),
+      //     edges: state.edges.filter(
+      //       (edge) =>
+      //         !nodeIdsToDelete.includes(edge.source) &&
+      //         !nodeIdsToDelete.includes(edge.target)
+      //     ),
+      //   }
+      // })
     },
     setNodes: (newNodes: Node<NodeData>[]) => {
-      set({
-        nodes: newNodes,
-      })
+      applyPjChanges(get, set, (prev) => ({ ...prev, nodes: newNodes }))
+
+      // set({
+      //   nodes: newNodes,
+      // })
     },
     addHorizontalElement: (parentId: string) => {
-      const currentNodes = get().nodes
-      const currentEdges = get().edges
+      const currentPj = getCurrentPj(get)
+      const currentNodes = currentPj.nodes
+      const currentEdges = currentPj.edges
 
       const newNodeId = nanoid()
-      const newNode: Node<NodeData> = createNode(newNodeId, parentId)
-      const newEdge: Edge = createEdge(parentId, newNodeId)
+      const newNode = createNode(newNodeId, parentId)
+      const newEdge = createEdge(parentId, newNodeId)
+
+      const newNodes = insertAfter<Node<NodeData>>(
+        currentNodes,
+        [newNode],
+        findBottomNodeIdx(parentId, currentNodes)
+      )
+      const newEdges = insertAfter<Edge>(
+        currentEdges,
+        [newEdge],
+        findBottomEdgeIdx(parentId, currentEdges)
+      )
 
       // storeに反映 & new nodeをfocus
-      set({
-        nodes: insertAfter<Node<NodeData>>(
-          currentNodes,
-          [newNode],
-          findBottomNodeIdx(parentId, currentNodes)
-        ),
-        edges: insertAfter<Edge>(
-          currentEdges,
-          [newEdge],
-          findBottomEdgeIdx(parentId, currentEdges)
-        ),
-      })
+      applyPjChanges(get, set, (prev) => ({
+        ...prev,
+        nodes: newNodes,
+        edges: newEdges,
+      }))
 
       setTimeout(() => {
         set({ focusedNodeId: newNodeId })
       }, 0)
     },
     addVerticalElement: (aboveNodeId: string, parentId: string) => {
-      const currentNodes = get().nodes
-      const currentEdges = get().edges
+      const currentPj = getCurrentPj(get)
+      const currentNodes = currentPj.nodes
+      const currentEdges = currentPj.edges
 
       const aboveNodeIdx = getNodeIdxById(aboveNodeId, currentNodes)
 
@@ -114,16 +152,19 @@ const useMindMapStore = create(
       const newNode: Node<NodeData> = createNode(newNodeId, parentId)
       const newEdge: Edge = createEdge(parentId, newNodeId)
 
+      const newNodes = insertAfter<Node<NodeData>>(
+        currentNodes,
+        [newNode],
+        aboveNodeIdx
+      )
+      const newEdges = insertAfter<Edge>(currentEdges, [newEdge], aboveEdgeIdx)
+
       // storeに反映 & new nodeをfocus
-      set({
-        nodes: insertAfter<Node<NodeData>>(
-          currentNodes,
-          [newNode],
-          aboveNodeIdx
-        ),
-        edges: insertAfter<Edge>(currentEdges, [newEdge], aboveEdgeIdx),
-        focusedNodeId: newNodeId,
-      })
+      applyPjChanges(get, set, (prev) => ({
+        ...prev,
+        nodes: newNodes,
+        edges: newEdges,
+      }))
 
       setTimeout(() => {
         set({ focusedNodeId: newNodeId })
@@ -131,7 +172,7 @@ const useMindMapStore = create(
     },
     moveNodeTobeChild: (movingNodeId: string, parentId: string) => {
       //変更前ノード・エッジの取得
-      const { nodes: currentNodes, edges: currentEdges } = get()
+      const { nodes: currentNodes, edges: currentEdges } = getCurrentPj(get)
 
       /* --- 1.ノードの処理 --- */
 
@@ -193,10 +234,11 @@ const useMindMapStore = create(
       )
 
       /* --- 3.zustand storeに反映 --- */
-      set({
+      applyPjChanges(get, set, (prev) => ({
+        ...prev,
         nodes: newNodes,
         edges: newEdges,
-      })
+      }))
 
       console.log(currentNodes)
       console.log(currentEdges)
@@ -211,7 +253,7 @@ const useMindMapStore = create(
       parentId: string
     ) => {
       //変更前ノード・エッジの取得
-      const { nodes: currentNodes, edges: currentEdges } = get()
+      const { nodes: currentNodes, edges: currentEdges } = getCurrentPj(get)
 
       /* --- 1.ノードの処理 --- */
 
@@ -285,10 +327,11 @@ const useMindMapStore = create(
       )
 
       /* --- 3.zustand storeに反映 --- */
-      set({
+      applyPjChanges(get, set, (prev) => ({
+        ...prev,
         nodes: newNodes,
         edges: newEdges,
-      })
+      }))
     },
 
     moveNodeBelowTarget: (
@@ -297,7 +340,7 @@ const useMindMapStore = create(
       parentId: string
     ) => {
       //変更前ノード・エッジの取得
-      const { nodes: currentNodes, edges: currentEdges } = get()
+      const { nodes: currentNodes, edges: currentEdges } = getCurrentPj(get)
 
       /* --- 1.ノードの処理 --- */
 
@@ -371,28 +414,33 @@ const useMindMapStore = create(
       )
 
       /* --- 3.zustand storeに反映 --- */
-      set({
+      applyPjChanges(get, set, (prev) => ({
+        ...prev,
         nodes: newNodes,
         edges: newEdges,
-      })
+      }))
     },
 
     updateNodeLabel: (nodeId: string, label: string) => {
-      set({
-        nodes: get().nodes.map((node) => {
-          if (node.id === nodeId) {
-            return {
-              ...node,
-              data: {
-                ...node.data,
-                label,
-              },
-            }
+      const { nodes: currentNodes } = getCurrentPj(get)
+
+      const newNodes = currentNodes.map((node) => {
+        if (node.id === nodeId) {
+          return {
+            ...node,
+            data: {
+              ...node.data,
+              label,
+            },
           }
-          return node
-        }),
+        }
+
+        return node
       })
+
+      applyPjChanges(get, set, (prev) => ({ ...prev, nodes: newNodes }))
     },
+
     movingNodeId: null,
     setMovingNodeId: (nodeId: string | null) => {
       set({
@@ -418,24 +466,23 @@ const useMindMapStore = create(
       })
     },
     updateIsDone: (nodeId: string, isDone: boolean) => {
-      const currentNodes = get().nodes
+      const { nodes: currentNodes } = getCurrentPj(get)
+      const newNodes = currentNodes.map((node) => {
+        if (node.id !== nodeId) return node
 
-      set({
-        nodes: currentNodes.map((node) => {
-          if (node.id !== nodeId) return node
-
-          return {
-            ...node,
-            data: {
-              ...node.data,
-              isDone,
-            },
-          }
-        }),
+        return {
+          ...node,
+          data: {
+            ...node.data,
+            isDone,
+          },
+        }
       })
+
+      applyPjChanges(get, set, (prev) => ({ ...prev, nodes: newNodes }))
     },
     addComment: (nodeId: string, content: string) => {
-      const currentNodes = get().nodes
+      const { nodes: currentNodes } = getCurrentPj(get)
 
       const newComment: NodeComment = {
         id: nanoid(),
@@ -443,7 +490,7 @@ const useMindMapStore = create(
         createdAt: new Date().toISOString(),
       }
 
-      const updatedNodes: Node<NodeData>[] = currentNodes.map((node) => {
+      const newNodes: Node<NodeData>[] = currentNodes.map((node) => {
         if (node.id !== nodeId) return node
 
         return {
@@ -455,18 +502,16 @@ const useMindMapStore = create(
         }
       })
 
-      set({
-        nodes: updatedNodes,
-      })
+      applyPjChanges(get, set, (prev) => ({ ...prev, nodes: newNodes }))
     },
     editComment: (
       nodeId: string,
       commentId: string,
       updatedContent: string
     ) => {
-      const currentNodes = get().nodes
+      const { nodes: currentNodes } = getCurrentPj(get)
 
-      const updatedNodes: Node<NodeData>[] = currentNodes.map((node) => {
+      const newNodes: Node<NodeData>[] = currentNodes.map((node) => {
         if (node.id !== nodeId) return node
 
         return {
@@ -485,14 +530,12 @@ const useMindMapStore = create(
         }
       })
 
-      set({
-        nodes: updatedNodes,
-      })
+      applyPjChanges(get, set, (prev) => ({ ...prev, nodes: newNodes }))
     },
     deleteComment: (nodeId: string, commentId: string) => {
-      const currentNodes = get().nodes
+      const { nodes: currentNodes } = getCurrentPj(get)
 
-      const updatedNodes: Node<NodeData>[] = currentNodes.map((node) => {
+      const newNodes: Node<NodeData>[] = currentNodes.map((node) => {
         if (node.id !== nodeId) return node
 
         return {
@@ -506,9 +549,7 @@ const useMindMapStore = create(
         }
       })
 
-      set({
-        nodes: updatedNodes,
-      })
+      applyPjChanges(get, set, (prev) => ({ ...prev, nodes: newNodes }))
     },
     showDoneNodes: true,
     setShowDoneNodes: (show: boolean) => {
