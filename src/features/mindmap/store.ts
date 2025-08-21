@@ -24,18 +24,46 @@ import {
 import { initialPjs } from './mockInitialElements'
 import { type NodeData } from '../../types'
 import { nanoid } from 'nanoid'
-import { createEdge, createNode } from './utils/elementFactory'
+import { createPj, createEdge, createNode } from './utils/elementFactory'
 import { insertAfter, insertBefore } from './utils/arrayUtils'
 import { getCurrentPj, applyPjChanges } from './utils/projectUtils'
 
 import { subscribeWithSelector } from 'zustand/middleware'
+import { ROOT_NODE_ID } from './constants'
 
 const useMindMapStore = create(
   subscribeWithSelector<MindMapStore>((set, get) => ({
     // nodes: initialNodes,
     // edges: initialEdges,
     projects: initialPjs,
-    currentPjId: 'pj1',
+    currentPjId: 'pj2',
+    setCurrentPjId: (newPjId: string) => {
+      set({
+        currentPjId: newPjId,
+        focusedNodeId: ROOT_NODE_ID,
+        movingNodeId: null,
+        editingNodeId: null,
+        commentPopupId: null,
+      })
+    },
+    addPj: () => {
+      const newPjId = nanoid()
+      const newPj = createPj(newPjId, 'newProject')
+
+      set((state) => {
+        return {
+          projects: {
+            ...state.projects,
+            [newPjId]: newPj,
+          },
+          currentPjId: newPjId,
+          focusedNodeId: ROOT_NODE_ID,
+          movingNodeId: null,
+          editingNodeId: null,
+          commentPopupId: null,
+        }
+      })
+    },
     onNodesChange: (changes: NodeChange<Node<NodeData>>[]) => {
       const currentPj = getCurrentPj(get)
 

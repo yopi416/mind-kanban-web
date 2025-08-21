@@ -29,6 +29,8 @@ export type MindMapStore = {
   // edges: Edge[]
   projects: Projects
   currentPjId: string
+  setCurrentPjId: (newPjId: string) => void
+  addPj: () => void
   onNodesChange: OnNodesChange<Node<NodeData>>
   onEdgesChange: OnEdgesChange
   deleteNodes: (nodeIdToDelete: string) => void
