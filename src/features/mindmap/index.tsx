@@ -24,6 +24,7 @@ import {
 } from './utils/nodeTreeUtils'
 
 import '@xyflow/react/dist/style.css'
+import { ROOT_NODE_ID } from './constants'
 
 const selector = (store: MindMapStore) => {
   const currentPj = store.projects[store.currentPjId]
@@ -80,7 +81,7 @@ function createShortcuts(
 
   /* Delete / Backspace 共通ハンドラを 1 個用意 */
   const del = () => {
-    if (focusedNodeId === '1') return // ルートは削除不可
+    if (focusedNodeId === ROOT_NODE_ID) return // ルートは削除不可
 
     deleteNodes(focusedNodeId)
 
@@ -100,14 +101,17 @@ function createShortcuts(
     },
     ArrowDown: () => {
       const nextId = getBelowNodeId(focusedNodeId, nodes)
+      console.log(nextId)
       if (nextId) setFocusedNodeId(nextId)
     },
     ArrowRight: () => {
       const nextId = getTopNodeIdByParentId(focusedNodeId, nodes)
+
       if (nextId) setFocusedNodeId(nextId)
     },
     ArrowLeft: () => {
       const nextId = getParentIdById(focusedNodeId, nodes)
+
       if (nextId) setFocusedNodeId(nextId)
     },
 
@@ -217,7 +221,7 @@ function MindMap() {
             console.log('Right')
           } else {
             // ルートノードの上下には移動不可
-            if (targetNodeId === '1') {
+            if (targetNodeId === ROOT_NODE_ID) {
               return
             }
 
@@ -287,7 +291,8 @@ function MindMap() {
   }, [])
 
   return (
-    <div style={{ height: '100%' }}>
+    // <div style={{ height: '100%' }}>
+    <div className="h-full w-full">
       <ReactFlow
         nodes={nodes}
         edges={edges}
@@ -301,6 +306,7 @@ function MindMap() {
         connectionLineStyle={{ display: 'none' }}
         // nodeOrigin={nodeOrigin}
         nodesDraggable={false}
+        style={{ width: '100%', height: '100%' }}
 
         // fitView
       >
