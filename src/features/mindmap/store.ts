@@ -64,6 +64,59 @@ const useMindMapStore = create(
         }
       })
     },
+    renamePj: (pjId: string, newPjName: string) => {
+      set((state) => {
+        const currentPj = state.projects[pjId]
+
+        if (!currentPj) {
+          console.warn(`Project "${pjId}" not found`)
+          return state
+        }
+
+        if (!newPjName.trim()) {
+          console.warn(`Invalid ProjectName`)
+          return state
+        }
+
+        return {
+          projects: {
+            ...state.projects,
+            [pjId]: {
+              ...currentPj,
+              name: newPjName,
+            },
+          },
+        }
+      })
+    },
+    deletePj: (pjId: string) => {
+      set((state) => {
+        if (!state.projects[pjId]) return state
+
+        const newPjs = { ...state.projects }
+        delete newPjs[pjId]
+
+        if (Object.keys(newPjs).length === 0) {
+          return state
+        }
+
+        let newCurrentPjId = state.currentPjId
+
+        if (newCurrentPjId === pjId) {
+          const [nextId] = Object.keys(newPjs)
+          newCurrentPjId = nextId
+        }
+
+        return {
+          projects: newPjs,
+          currentPjId: newCurrentPjId,
+          movingNodeId: null,
+          editingNodeId: null,
+          commentPopupId: null,
+          focusedNodeId: null,
+        }
+      })
+    },
     onNodesChange: (changes: NodeChange<Node<NodeData>>[]) => {
       const currentPj = getCurrentPj(get)
 

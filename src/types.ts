@@ -31,6 +31,8 @@ export type MindMapStore = {
   currentPjId: string
   setCurrentPjId: (newPjId: string) => void
   addPj: () => void
+  renamePj: (pjId: string, newPjName: string) => void
+  deletePj: (pjId: string) => void
   onNodesChange: OnNodesChange<Node<NodeData>>
   onEdgesChange: OnEdgesChange
   deleteNodes: (nodeIdToDelete: string) => void
