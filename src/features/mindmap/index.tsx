@@ -276,6 +276,18 @@ function MindMap() {
     const handleKey = (e: KeyboardEvent) => {
       if (isComposing(e)) return
 
+      // サイドバーのrename中はショートカットを無効化
+      const target = e.target as HTMLElement | null
+      if (
+        target &&
+        (target.tagName === 'INPUT' ||
+          target.tagName === 'TEXTAREA' ||
+          (target as HTMLElement).isContentEditable ||
+          target.closest('[role="textbox"]'))
+      ) {
+        return
+      }
+
       const state = useMindMapStore.getState()
       const shortcuts = createShortcuts(state)
 
