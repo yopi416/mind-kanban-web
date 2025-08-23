@@ -24,6 +24,25 @@ export type Project = {
 
 export type Projects = Record<string, Project>
 
+// HistoryStack ClassのImplements用
+export interface Stack<T> {
+  push(item: T): void
+  pop(): T | undefined
+  clear(): void
+  readonly size: number
+  readonly isEmpty: boolean
+}
+
+export type StackItem = {
+  nodes: Node<NodeData>[]
+  edges: Edge[]
+}
+
+export type History = {
+  undoStack: Stack<StackItem>
+  redoStack: Stack<StackItem>
+}
+
 export type MindMapStore = {
   // nodes: Node<NodeData>[]
   // edges: Edge[]
@@ -69,4 +88,9 @@ export type MindMapStore = {
   deleteComment: (nodeId: string, commentId: string) => void
   showDoneNodes: boolean
   setShowDoneNodes: (show: boolean) => void
+  history: History // undo・redo用
+  undo: () => void
+  redo: () => void
+  undoCount: number // undo可能回数のカウント
+  redoCount: number // redo可能回数のカウント
 }

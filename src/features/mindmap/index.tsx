@@ -25,6 +25,7 @@ import {
 
 import '@xyflow/react/dist/style.css'
 import { ROOT_NODE_ID } from './constants'
+import { Button } from '@/components/ui/button'
 
 const selector = (store: MindMapStore) => {
   const currentPj = store.projects[store.currentPjId]
@@ -45,6 +46,10 @@ const selector = (store: MindMapStore) => {
     focusedNodeId: store.focusedNodeId,
     setFocusedNodeId: store.setFocusedNodeId,
     updateIsDone: store.updateIsDone,
+    undo: store.undo,
+    redo: store.redo,
+    undoCount: store.undoCount,
+    redoCount: store.redoCount,
   }
 }
 
@@ -159,6 +164,10 @@ function MindMap() {
     moveNodeAboveTarget,
     setMovingNodeId,
     setFocusedNodeId,
+    undo,
+    redo,
+    undoCount,
+    redoCount,
   } = useMindMapStore(useShallow(selector))
 
   // ノードの付け替え（ドラッグ開始時）の処理
@@ -305,6 +314,12 @@ function MindMap() {
   return (
     // <div style={{ height: '100%' }}>
     <div className="h-full w-full">
+      <Button onClick={undo} disabled={undoCount === 0}>
+        undo!!!
+      </Button>
+      <Button onClick={redo} disabled={redoCount === 0}>
+        redo!!!
+      </Button>
       <ReactFlow
         nodes={nodes}
         edges={edges}
