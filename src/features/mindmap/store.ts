@@ -120,6 +120,8 @@ const useMindMapStore = create(
     onNodesChange: (changes: NodeChange<Node<NodeData>>[]) => {
       const currentPj = getCurrentPj(get)
 
+      console.log('nodeschange!!!')
+
       applyPjChanges(get, set, (prev: Project) => ({
         ...prev,
         nodes: applyNodeChanges<Node<NodeData>>(changes, currentPj.nodes),
@@ -127,6 +129,8 @@ const useMindMapStore = create(
     },
     onEdgesChange: (changes: EdgeChange[]) => {
       const currentPj = getCurrentPj(get)
+
+      console.log('edgeeschange!!!')
 
       applyPjChanges(get, set, (prev: Project) => ({
         ...prev,
@@ -503,6 +507,7 @@ const useMindMapStore = create(
     },
 
     updateNodeLabel: (nodeId: string, label: string) => {
+      console.log('updateNodeLabel!!')
       const { nodes: currentNodes } = getCurrentPj(get)
 
       const newNodes = currentNodes.map((node) => {

@@ -12,6 +12,7 @@ import { type NodeData, type MindMapStore } from '../../../types.ts'
 import { CommentPopover } from './CommentPopover.tsx'
 import { Checkbox } from '@/components/ui/checkbox'
 // import { set } from 'lodash'
+import { MAX_NODE_LABEL_LENGTH } from '../constants.ts'
 
 type HoverZone = 'left-top' | 'left-bottom' | 'right' | null
 
@@ -26,7 +27,7 @@ const selector = (store: MindMapStore) => ({
 })
 
 function CustomNode({ id, data }: NodeProps<Node<NodeData>>) {
-  console.log(`${new Date().toLocaleString()} 再描画:`, id)
+  // console.log(`${new Date().toLocaleString()} 再描画:`, id)
 
   /* zustan-storeから呼び出し */
   const {
@@ -127,7 +128,9 @@ function CustomNode({ id, data }: NodeProps<Node<NodeData>>) {
 
   // textarea の className
   const textAreaCls = clsx(
+    // 'w-60 resize-none overflow-hidden px-3 pt-1 text-center text-2xl',
     'w-60 resize-none overflow-hidden px-3 pt-1 text-center text-2xl',
+    'whitespace-pre-wrap break-words',
     isEditing
       ? 'relative z-[2] pointer-events-auto focus:outline-none'
       : 'pointer-events-none select-none opacity-90'
@@ -166,32 +169,25 @@ function CustomNode({ id, data }: NodeProps<Node<NodeData>>) {
   /* ---テキスト変更時に、zustandstoreに反映&テキストボックスリサイズする処理--- */
   const textAreaRef = useRef<HTMLTextAreaElement>(null) //ノードのテキストへのrefへのref
 
-  const resizeTextArea = (el: HTMLTextAreaElement, text: string) => {
+  const resizeTextArea = (el: HTMLTextAreaElement) => {
     if (!el) return
-
-    const lines = text.split('\n')
-    // const maxLineLength = Math.max(...lines.map((line) => line.length))
-    const lineCount = lines.length
-
-    // 横幅：最長行に基づき ch 単位で指定
-    // const charWidth = maxLineLength * 1.53
-    // el.style.width = `${charWidth}ch`
-
-    // 縦幅：行数 × 行の高さ（1em） + 少し余白（例: 0.5em）
-    const lineHeight = lineCount * 1.33
-    el.style.height = `${lineHeight + 0.5}em`
+    el.style.height = '0px' // or 'auto'
+    el.style.height = `${el.scrollHeight}px`
   }
 
-  // 入力中にリアルタイムで textareのwidth を更新する
+  // ノードのテキストを更新 & 入力中に textareaのwidth を更新する
   const handleChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    updateNodeLabel(id, e.target.value)
-    resizeTextArea(e.currentTarget, e.target.value)
+    const limitedLengthLabel = e.target.value.slice(0, MAX_NODE_LABEL_LENGTH) // 入力文字数制限
+
+    updateNodeLabel(id, limitedLengthLabel)
+    e.currentTarget.value = limitedLengthLabel
+    resizeTextArea(e.currentTarget) //高さを変更
   }
 
   // マウント直後 & ノードのラベル更新が起こったときにに textareaのwidth を合わせる
   useLayoutEffect(() => {
     if (textAreaRef.current) {
-      resizeTextArea(textAreaRef.current, data.label)
+      resizeTextArea(textAreaRef.current)
     }
   }, [data.label])
 
@@ -275,6 +271,7 @@ function CustomNode({ id, data }: NodeProps<Node<NodeData>>) {
         ref={textAreaRef}
         value={data.label}
         onChange={handleChange}
+        maxLength={MAX_NODE_LABEL_LENGTH}
         onBlur={leaveEdit}
         // readOnly={!isEditing}
         tabIndex={isEditing ? 0 : -1} // 編集中以外はフォーカス対象外
@@ -289,6 +286,10 @@ function CustomNode({ id, data }: NodeProps<Node<NodeData>>) {
         }}
         className={textAreaCls}
       />
+
+      {/* <div className="absolute bottom-1 right-2 text-xs text-muted-foreground">
+        {data.label.length} / {MAX_NODE_LABEL_LENGTH}
+      </div> */}
 
       <Handle type="target" position={Position.Left} />
       <Handle
