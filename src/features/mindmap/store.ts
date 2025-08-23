@@ -7,7 +7,12 @@ import {
   type NodeChange,
 } from '@xyflow/react'
 import { create } from 'zustand'
-import { type MindMapStore, type NodeComment, type Project } from '../../types'
+import {
+  type MindMapStore,
+  type NodeComment,
+  type Project,
+  type StackItem,
+} from '../../types'
 import {
   collectDescendantIds,
   findBottomNodeIdx,
@@ -29,7 +34,14 @@ import { insertAfter, insertBefore } from './utils/arrayUtils'
 import { getCurrentPj, applyPjChanges } from './utils/projectUtils'
 
 import { subscribeWithSelector } from 'zustand/middleware'
-import { ROOT_NODE_ID } from './constants'
+import { ROOT_NODE_ID, HISTORY_STACK_CAPACITY } from './constants'
+import {
+  HistoryStack,
+  clearHistory,
+  cloneSnapshot,
+  pushUndoItem,
+  syncHistoryCounters,
+} from './utils/historyUtils'
 
 const useMindMapStore = create(
   subscribeWithSelector<MindMapStore>((set, get) => ({
@@ -45,6 +57,9 @@ const useMindMapStore = create(
         editingNodeId: null,
         commentPopupId: null,
       })
+
+      // Project移動する時は履歴をクリア
+      clearHistory(get, set)
     },
     addPj: () => {
       const newPjId = nanoid()
@@ -63,6 +78,9 @@ const useMindMapStore = create(
           commentPopupId: null,
         }
       })
+
+      // Project移動する時は履歴をクリア
+      clearHistory(get, set)
     },
     renamePj: (pjId: string, newPjName: string) => {
       set((state) => {
@@ -116,6 +134,9 @@ const useMindMapStore = create(
           focusedNodeId: null,
         }
       })
+
+      // Project移動する時は履歴をクリア
+      clearHistory(get, set)
     },
     onNodesChange: (changes: NodeChange<Node<NodeData>>[]) => {
       const currentPj = getCurrentPj(get)
@@ -319,17 +340,25 @@ const useMindMapStore = create(
       )
 
       /* --- 3.zustand storeに反映 --- */
+
+      // undo用に変更前ノード・エッジを取得
+      const undoItemToPush = cloneSnapshot(currentNodes, currentEdges)
+
+      // storeに反映
       applyPjChanges(get, set, (prev) => ({
         ...prev,
         nodes: newNodes,
         edges: newEdges,
       }))
 
-      console.log(currentNodes)
-      console.log(currentEdges)
-
-      console.log(newNodes)
-      console.log(newEdges)
+      // store反映後に、undo/redo処理
+      pushUndoItem(get, set, undoItemToPush)
+      console.log(
+        get().undoCount,
+        get().redoCount,
+        get().history.redoStack,
+        get().history.undoStack
+      )
     },
 
     moveNodeAboveTarget: (
@@ -643,6 +672,60 @@ const useMindMapStore = create(
         showDoneNodes: show,
       })
     },
+    history: {
+      undoStack: new HistoryStack<StackItem>(HISTORY_STACK_CAPACITY),
+      redoStack: new HistoryStack<StackItem>(HISTORY_STACK_CAPACITY),
+    },
+    undo: () => {
+      const { undoStack, redoStack } = get().history
+
+      // undoStackからpop
+      const popedItem = undoStack.pop()
+      if (!popedItem) return //pop対象0の場合undefinedを返すため
+
+      // redoStackにプッシュする現在のノードを取得し、deepcopy
+      const { nodes: currentNodes, edges: currentEdges } = getCurrentPj(get)
+      const redoItemToPush = cloneSnapshot(currentNodes, currentEdges)
+
+      // popedItemを現在ノードに反映
+      applyPjChanges(get, set, (prev) => ({
+        ...prev,
+        nodes: popedItem.nodes,
+        edges: popedItem.edges,
+      }))
+
+      // redoStackにpush
+      redoStack.push(redoItemToPush)
+
+      // undo/redoスタック操作後のカウンタ同期
+      syncHistoryCounters(get, set)
+    },
+    redo: () => {
+      const { undoStack, redoStack } = get().history
+
+      // redoStackからpop
+      const popedItem = redoStack.pop()
+      if (!popedItem) return
+
+      // undoStackにプッシュする現在のノードを取得し、deepcopy
+      const { nodes: currentNodes, edges: currentEdges } = getCurrentPj(get)
+      const undoItemToPush = cloneSnapshot(currentNodes, currentEdges)
+
+      // popedItemを現在ノードに反映
+      applyPjChanges(get, set, (prev) => ({
+        ...prev,
+        nodes: popedItem.nodes,
+        edges: popedItem.edges,
+      }))
+
+      // undoStackにpush
+      undoStack.push(undoItemToPush)
+
+      // undo/redoスタック操作後のカウンタ同期
+      syncHistoryCounters(get, set)
+    },
+    undoCount: 0,
+    redoCount: 0,
   }))
 )
 
