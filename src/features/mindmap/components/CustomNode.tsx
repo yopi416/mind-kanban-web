@@ -149,6 +149,7 @@ function CustomNode({ id, data }: NodeProps<Node<NodeData>>) {
   const leaveEdit = () => {
     setIsEditing(false)
     setEditingNodeId(null)
+    console.log('eeeee')
   }
 
   /* --- コメントポップアップ用 --- */
