@@ -94,3 +94,16 @@ export type MindMapStore = {
   undoCount: number // undo可能回数のカウント
   redoCount: number // redo可能回数のカウント
 }
+
+// zustandのget,set関数の同型
+export type GetStore = () => MindMapStore
+export type SetStore = (
+  partial:
+    | Partial<MindMapStore>
+    | ((state: MindMapStore) => Partial<MindMapStore>)
+) => void
+
+// trueの場合、pjの変更を反映する際に変更前状態をundoに追加する
+export type applyPjChangesOpts = {
+  addToUndo?: boolean
+}

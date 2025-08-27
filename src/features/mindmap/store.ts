@@ -31,7 +31,7 @@ import { type NodeData } from '../../types'
 import { nanoid } from 'nanoid'
 import { createPj, createEdge, createNode } from './utils/elementFactory'
 import { insertAfter, insertBefore } from './utils/arrayUtils'
-import { getCurrentPj, applyPjChanges } from './utils/projectUtils'
+import { getCurrentPj, applyPjChangesTrial } from './utils/projectUtils'
 
 import { subscribeWithSelector } from 'zustand/middleware'
 import { ROOT_NODE_ID, HISTORY_STACK_CAPACITY } from './constants'
@@ -39,8 +39,7 @@ import {
   HistoryStack,
   clearHistory,
   cloneSnapshot,
-  pushUndoItem,
-  syncHistoryCounters,
+  // syncHistoryCounters,
 } from './utils/historyUtils'
 
 const useMindMapStore = create(
@@ -59,7 +58,7 @@ const useMindMapStore = create(
       })
 
       // Project移動する時は履歴をクリア
-      clearHistory(get, set)
+      clearHistory(get().history, set)
     },
     addPj: () => {
       const newPjId = nanoid()
@@ -80,7 +79,7 @@ const useMindMapStore = create(
       })
 
       // Project移動する時は履歴をクリア
-      clearHistory(get, set)
+      clearHistory(get().history, set)
     },
     renamePj: (pjId: string, newPjName: string) => {
       set((state) => {
@@ -136,30 +135,42 @@ const useMindMapStore = create(
       })
 
       // Project移動する時は履歴をクリア
-      clearHistory(get, set)
+      clearHistory(get().history, set)
     },
     onNodesChange: (changes: NodeChange<Node<NodeData>>[]) => {
-      const currentPj = getCurrentPj(get)
+      const currentPj = getCurrentPj(get())
 
-      console.log('nodeschange!!!')
-
-      applyPjChanges(get, set, (prev: Project) => ({
+      const pjUpdater = (prev: Project) => ({
         ...prev,
         nodes: applyNodeChanges<Node<NodeData>>(changes, currentPj.nodes),
-      }))
+      })
+
+      applyPjChangesTrial(set, pjUpdater, { shouldAddToStack: true })
+
+      // applyPjChanges(get, set, (prev: Project) => ({
+      //   ...prev,
+      //   nodes: applyNodeChanges<Node<NodeData>>(changes, currentPj.nodes),
+      // }))
     },
     onEdgesChange: (changes: EdgeChange[]) => {
-      const currentPj = getCurrentPj(get)
+      const currentPj = getCurrentPj(get())
 
       console.log('edgeeschange!!!')
 
-      applyPjChanges(get, set, (prev: Project) => ({
+      const pjUpdater = (prev: Project) => ({
         ...prev,
         edges: applyEdgeChanges(changes, currentPj.edges),
-      }))
+      })
+
+      applyPjChangesTrial(set, pjUpdater, { shouldAddToStack: true })
+
+      // applyPjChanges(get, set, (prev: Project) => ({
+      //   ...prev,
+      //   edges: applyEdgeChanges(changes, currentPj.edges),
+      // }))
     },
     deleteNodes: (nodeIdToDelete: string) => {
-      const currentPj = getCurrentPj(get)
+      const currentPj = getCurrentPj(get())
       const nodeIdsToDelete = collectDescendantIds(
         [nodeIdToDelete],
         currentPj.nodes
@@ -173,11 +184,19 @@ const useMindMapStore = create(
           !nodeIdsToDelete.includes(e.target)
       )
 
-      applyPjChanges(get, set, (prev) => ({
+      const pjUpdater = (prev: Project) => ({
         ...prev,
         nodes: newNodes,
         edges: newEdges,
-      }))
+      })
+
+      applyPjChangesTrial(set, pjUpdater, { shouldAddToStack: true })
+
+      // applyPjChanges(get, set, (prev) => ({
+      //   ...prev,
+      //   nodes: newNodes,
+      //   edges: newEdges,
+      // }))
 
       // set((state) => {
       //   const nodeIdsToDelete = collectDescendantIds(
@@ -198,14 +217,17 @@ const useMindMapStore = create(
       // })
     },
     setNodes: (newNodes: Node<NodeData>[]) => {
-      applyPjChanges(get, set, (prev) => ({ ...prev, nodes: newNodes }))
+      const pjUpdater = (prev: Project) => ({ ...prev, nodes: newNodes })
+      applyPjChangesTrial(set, pjUpdater, { shouldAddToStack: false })
+
+      // applyPjChanges(get, set, (prev) => ({ ...prev, nodes: newNodes }))
 
       // set({
       //   nodes: newNodes,
       // })
     },
     addHorizontalElement: (parentId: string) => {
-      const currentPj = getCurrentPj(get)
+      const currentPj = getCurrentPj(get())
       const currentNodes = currentPj.nodes
       const currentEdges = currentPj.edges
 
@@ -224,19 +246,29 @@ const useMindMapStore = create(
         findBottomEdgeIdx(parentId, currentEdges)
       )
 
-      // storeに反映 & new nodeをfocus
-      applyPjChanges(get, set, (prev) => ({
+      // pj更新ロジックの規定
+      const pjUpdater = (prev: Project) => ({
         ...prev,
         nodes: newNodes,
         edges: newEdges,
-      }))
+      })
+
+      // storeに反映
+      applyPjChangesTrial(set, pjUpdater, { shouldAddToStack: true })
+
+      // storeに反映 & new nodeをfocus
+      // applyPjChanges(get, set, (prev) => ({
+      //   ...prev,
+      //   nodes: newNodes,
+      //   edges: newEdges,
+      // }))
 
       setTimeout(() => {
         set({ focusedNodeId: newNodeId })
       }, 0)
     },
     addVerticalElement: (aboveNodeId: string, parentId: string) => {
-      const currentPj = getCurrentPj(get)
+      const currentPj = getCurrentPj(get())
       const currentNodes = currentPj.nodes
       const currentEdges = currentPj.edges
 
@@ -265,12 +297,22 @@ const useMindMapStore = create(
       )
       const newEdges = insertAfter<Edge>(currentEdges, [newEdge], aboveEdgeIdx)
 
-      // storeに反映 & new nodeをfocus
-      applyPjChanges(get, set, (prev) => ({
+      // pj更新ロジックの規定
+      const pjUpdater = (prev: Project) => ({
         ...prev,
         nodes: newNodes,
         edges: newEdges,
-      }))
+      })
+
+      // storeに反映
+      applyPjChangesTrial(set, pjUpdater, { shouldAddToStack: true })
+
+      // // storeに反映 & new nodeをfocus
+      // applyPjChanges(get, set, (prev) => ({
+      //   ...prev,
+      //   nodes: newNodes,
+      //   edges: newEdges,
+      // }))
 
       setTimeout(() => {
         set({ focusedNodeId: newNodeId })
@@ -278,7 +320,7 @@ const useMindMapStore = create(
     },
     moveNodeTobeChild: (movingNodeId: string, parentId: string) => {
       //変更前ノード・エッジの取得
-      const { nodes: currentNodes, edges: currentEdges } = getCurrentPj(get)
+      const { nodes: currentNodes, edges: currentEdges } = getCurrentPj(get())
 
       /* --- 1.ノードの処理 --- */
 
@@ -342,23 +384,31 @@ const useMindMapStore = create(
       /* --- 3.zustand storeに反映 --- */
 
       // undo用に変更前ノード・エッジを取得
-      const undoItemToPush = cloneSnapshot(currentNodes, currentEdges)
+      // const undoItemToPush = cloneSnapshot(currentNodes, currentEdges)
 
-      // storeに反映
-      applyPjChanges(get, set, (prev) => ({
+      // pj更新ロジックの規定
+      const pjUpdater = (prev: Project) => ({
         ...prev,
         nodes: newNodes,
         edges: newEdges,
-      }))
+      })
+
+      // storeに反映
+      applyPjChangesTrial(set, pjUpdater, { shouldAddToStack: true })
+      // applyPjChanges(get, set, (prev) => ({
+      //   ...prev,
+      //   nodes: newNodes,
+      //   edges: newEdges,
+      // }))
 
       // store反映後に、undo/redo処理
-      pushUndoItem(get, set, undoItemToPush)
-      console.log(
-        get().undoCount,
-        get().redoCount,
-        get().history.redoStack,
-        get().history.undoStack
-      )
+      // pushUndoItem(get, set, undoItemToPush)
+      // console.log(
+      //   get().undoCount,
+      //   get().redoCount,
+      //   get().history.redoStack,
+      //   get().history.undoStack
+      // )
     },
 
     moveNodeAboveTarget: (
@@ -367,7 +417,7 @@ const useMindMapStore = create(
       parentId: string
     ) => {
       //変更前ノード・エッジの取得
-      const { nodes: currentNodes, edges: currentEdges } = getCurrentPj(get)
+      const { nodes: currentNodes, edges: currentEdges } = getCurrentPj(get())
 
       /* --- 1.ノードの処理 --- */
 
@@ -441,11 +491,22 @@ const useMindMapStore = create(
       )
 
       /* --- 3.zustand storeに反映 --- */
-      applyPjChanges(get, set, (prev) => ({
+
+      // pj更新ロジックの規定
+      const pjUpdater = (prev: Project) => ({
         ...prev,
         nodes: newNodes,
         edges: newEdges,
-      }))
+      })
+
+      // storeに反映
+      applyPjChangesTrial(set, pjUpdater, { shouldAddToStack: true })
+
+      // applyPjChanges(get, set, (prev) => ({
+      //   ...prev,
+      //   nodes: newNodes,
+      //   edges: newEdges,
+      // }))
     },
 
     moveNodeBelowTarget: (
@@ -454,7 +515,7 @@ const useMindMapStore = create(
       parentId: string
     ) => {
       //変更前ノード・エッジの取得
-      const { nodes: currentNodes, edges: currentEdges } = getCurrentPj(get)
+      const { nodes: currentNodes, edges: currentEdges } = getCurrentPj(get())
 
       /* --- 1.ノードの処理 --- */
 
@@ -528,16 +589,27 @@ const useMindMapStore = create(
       )
 
       /* --- 3.zustand storeに反映 --- */
-      applyPjChanges(get, set, (prev) => ({
+
+      // pj更新ロジックの規定
+      const pjUpdater = (prev: Project) => ({
         ...prev,
         nodes: newNodes,
         edges: newEdges,
-      }))
+      })
+
+      // storeに反映
+      applyPjChangesTrial(set, pjUpdater, { shouldAddToStack: true })
+
+      // applyPjChanges(get, set, (prev) => ({
+      //   ...prev,
+      //   nodes: newNodes,
+      //   edges: newEdges,
+      // }))
     },
 
     updateNodeLabel: (nodeId: string, label: string) => {
       console.log('updateNodeLabel!!')
-      const { nodes: currentNodes } = getCurrentPj(get)
+      const { nodes: currentNodes } = getCurrentPj(get())
 
       const newNodes = currentNodes.map((node) => {
         if (node.id === nodeId) {
@@ -553,7 +625,13 @@ const useMindMapStore = create(
         return node
       })
 
-      applyPjChanges(get, set, (prev) => ({ ...prev, nodes: newNodes }))
+      // pj更新ロジックの規定
+      const pjUpdater = (prev: Project) => ({ ...prev, nodes: newNodes })
+
+      // storeに反映
+      applyPjChangesTrial(set, pjUpdater, { shouldAddToStack: false })
+
+      // applyPjChanges(get, set, (prev) => ({ ...prev, nodes: newNodes }))
     },
 
     movingNodeId: null,
@@ -581,7 +659,7 @@ const useMindMapStore = create(
       })
     },
     updateIsDone: (nodeId: string, isDone: boolean) => {
-      const { nodes: currentNodes } = getCurrentPj(get)
+      const { nodes: currentNodes } = getCurrentPj(get())
       const newNodes = currentNodes.map((node) => {
         if (node.id !== nodeId) return node
 
@@ -594,10 +672,16 @@ const useMindMapStore = create(
         }
       })
 
-      applyPjChanges(get, set, (prev) => ({ ...prev, nodes: newNodes }))
+      // pj更新ロジックの規定
+      const pjUpdater = (prev: Project) => ({ ...prev, nodes: newNodes })
+
+      // storeに反映
+      applyPjChangesTrial(set, pjUpdater, { shouldAddToStack: true })
+
+      // applyPjChanges(get, set, (prev) => ({ ...prev, nodes: newNodes }))
     },
     addComment: (nodeId: string, content: string) => {
-      const { nodes: currentNodes } = getCurrentPj(get)
+      const { nodes: currentNodes } = getCurrentPj(get())
 
       const newComment: NodeComment = {
         id: nanoid(),
@@ -617,14 +701,20 @@ const useMindMapStore = create(
         }
       })
 
-      applyPjChanges(get, set, (prev) => ({ ...prev, nodes: newNodes }))
+      // pj更新ロジックの規定
+      const pjUpdater = (prev: Project) => ({ ...prev, nodes: newNodes })
+
+      // storeに反映
+      applyPjChangesTrial(set, pjUpdater, { shouldAddToStack: true })
+
+      // applyPjChanges(get, set, (prev) => ({ ...prev, nodes: newNodes }))
     },
     editComment: (
       nodeId: string,
       commentId: string,
       updatedContent: string
     ) => {
-      const { nodes: currentNodes } = getCurrentPj(get)
+      const { nodes: currentNodes } = getCurrentPj(get())
 
       const newNodes: Node<NodeData>[] = currentNodes.map((node) => {
         if (node.id !== nodeId) return node
@@ -645,10 +735,16 @@ const useMindMapStore = create(
         }
       })
 
-      applyPjChanges(get, set, (prev) => ({ ...prev, nodes: newNodes }))
+      // pj更新ロジックの規定
+      const pjUpdater = (prev: Project) => ({ ...prev, nodes: newNodes })
+
+      // storeに反映
+      applyPjChangesTrial(set, pjUpdater, { shouldAddToStack: true })
+
+      // applyPjChanges(get, set, (prev) => ({ ...prev, nodes: newNodes }))
     },
     deleteComment: (nodeId: string, commentId: string) => {
-      const { nodes: currentNodes } = getCurrentPj(get)
+      const { nodes: currentNodes } = getCurrentPj(get())
 
       const newNodes: Node<NodeData>[] = currentNodes.map((node) => {
         if (node.id !== nodeId) return node
@@ -664,7 +760,13 @@ const useMindMapStore = create(
         }
       })
 
-      applyPjChanges(get, set, (prev) => ({ ...prev, nodes: newNodes }))
+      // pj更新ロジックの規定
+      const pjUpdater = (prev: Project) => ({ ...prev, nodes: newNodes })
+
+      // storeに反映
+      applyPjChangesTrial(set, pjUpdater, { shouldAddToStack: true })
+
+      // applyPjChanges(get, set, (prev) => ({ ...prev, nodes: newNodes }))
     },
     showDoneNodes: true,
     setShowDoneNodes: (show: boolean) => {
@@ -679,50 +781,50 @@ const useMindMapStore = create(
     undo: () => {
       const { undoStack, redoStack } = get().history
 
-      // undoStackからpop
       const popedItem = undoStack.pop()
       if (!popedItem) return //pop対象0の場合undefinedを返すため
 
-      // redoStackにプッシュする現在のノードを取得し、deepcopy
-      const { nodes: currentNodes, edges: currentEdges } = getCurrentPj(get)
-      const redoItemToPush = cloneSnapshot(currentNodes, currentEdges)
+      const { nodes: currentNodes, edges: currentEdges } = getCurrentPj(get())
 
-      // popedItemを現在ノードに反映
-      applyPjChanges(get, set, (prev) => ({
+      const redoItemToPush = cloneSnapshot(currentNodes, currentEdges)
+      redoStack.push(redoItemToPush)
+
+      const pjUpdater = (prev: Project) => ({
         ...prev,
         nodes: popedItem.nodes,
         edges: popedItem.edges,
-      }))
+      })
 
-      // redoStackにpush
-      redoStack.push(redoItemToPush)
+      // popedItemを現在ノードに反映(関数内でsetまで完了)
+      applyPjChangesTrial(set, pjUpdater, { shouldAddToStack: false })
 
       // undo/redoスタック操作後のカウンタ同期
-      syncHistoryCounters(get, set)
+      set({ undoCount: undoStack.size, redoCount: redoStack.size })
+
+      console.log(get().undoCount, get().redoCount)
+      console.log(get().history.undoStack, get().history.redoStack)
     },
     redo: () => {
       const { undoStack, redoStack } = get().history
 
-      // redoStackからpop
       const popedItem = redoStack.pop()
       if (!popedItem) return
 
-      // undoStackにプッシュする現在のノードを取得し、deepcopy
-      const { nodes: currentNodes, edges: currentEdges } = getCurrentPj(get)
+      const { nodes: currentNodes, edges: currentEdges } = getCurrentPj(get())
       const undoItemToPush = cloneSnapshot(currentNodes, currentEdges)
+      undoStack.push(undoItemToPush)
 
-      // popedItemを現在ノードに反映
-      applyPjChanges(get, set, (prev) => ({
+      const pjUpdater = (prev: Project) => ({
         ...prev,
         nodes: popedItem.nodes,
         edges: popedItem.edges,
-      }))
+      })
 
-      // undoStackにpush
-      undoStack.push(undoItemToPush)
+      // popedItemを現在ノードに反映
+      applyPjChangesTrial(set, pjUpdater, { shouldAddToStack: false })
 
       // undo/redoスタック操作後のカウンタ同期
-      syncHistoryCounters(get, set)
+      set({ undoCount: undoStack.size, redoCount: redoStack.size })
     },
     undoCount: 0,
     redoCount: 0,

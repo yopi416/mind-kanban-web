@@ -1,13 +1,16 @@
-import { type MindMapStore, type Project } from '../../../types'
+import {
+  type applyPjChangesOpts,
+  type MindMapStore,
+  type Project,
+} from '../../../types'
 import useMindMapStore from '../store'
+import { cloneSnapshot, pushUndoItem } from './historyUtils'
 
 const now = () => new Date().toISOString()
 
 // currentPjの内容を取得
-export function getCurrentPj(getStore: () => MindMapStore) {
-  const store = getStore()
+export function getCurrentPj(store: MindMapStore) {
   const currentPj = store.projects[store.currentPjId]
-
   if (!currentPj) {
     throw new Error(`Project not found: ${store.currentPjId}`)
   }
@@ -16,51 +19,62 @@ export function getCurrentPj(getStore: () => MindMapStore) {
 }
 
 // currentPjの変更をProjects全体に反映
-export function applyPjChanges(
+// export function applyPjChanges(
+//   getStore: () => MindMapStore,
+//   setStore: typeof useMindMapStore.setState,
+//   updater: (pj: Project) => Project, //current pj更新ロジックは呼び出し元で規定
+//   isAddedToStack: boolean = false // UndoStackに追加されるかのフラグ
+// ) {
+//   const store = getStore()
+//   const currentPj = getCurrentPj(store)
+//   setStore({
+//     projects: {
+//       ...store.projects,
+//       [store.currentPjId]: updater({ ...currentPj, updatedAt: now() }), //storeのcurrentPj部分をupdaterで取得した変更反映後pjに更新
+//     },
+//   })
+// }
+
+export function applyPjChangesTrial(
   // getStore: () => MindMapStore,
   setStore: typeof useMindMapStore.setState,
-  updater: (pj: Project) => Project, //pjを投げると、あるプロパティを更新したcurrentPjを返す関数
-  isAddedToStack: boolean = false // UndoStackに追加されるかのフラグ
+  updater: (pj: Project) => Project, //current pj更新ロジックは呼び出し元で規定
+  opts: applyPjChangesOpts = {}
 ) {
+  const { shouldAddToStack = false } = opts
+
   setStore((prevStore) => {
     const { projects: currentPjs, currentPjId, history } = prevStore
     const currentPj = currentPjs[currentPjId]
-
     if (!currentPj) {
       throw new Error(`Project not found: ${prevStore.currentPjId}`)
     }
 
-    if (isAddedToStack) {
-      const { undoStack, redoStack } = history
-      undoStack.push({ nodes: currentPj.nodes, edges: currentPj.edges })
-      redoStack.clear()
+    // UndoStack追加オプションがtrueであれば、変更前状態を取得
+    const undoItem = shouldAddToStack
+      ? cloneSnapshot(currentPj.nodes, currentPj.edges)
+      : undefined
 
-      // undoStack追加パターン
-      return {
-        projects: {
-          ...currentPjs,
-          [currentPjId]: updater({ ...currentPj, updatedAt: now() }), //storeのcurrentPj部分をupdaterで取得した変更反映後pjに更新
-        },
-        undoCount: undoStack.size,
-        redoCount: redoStack.size,
-      }
+    // 変更反映後の状態のProjectsを計算
+    const newPj = updater({ ...currentPj, updatedAt: now() })
+    const newPjs = { ...currentPjs, [currentPjId]: newPj }
+
+    // スタックに追加しつつ、戻り値でカウンタを受け取る
+    let nextUndoCount = prevStore.undoCount
+    let nextRedoCount = prevStore.redoCount
+
+    if (undoItem) {
+      const { undoCount, redoCount } = pushUndoItem(history, undoItem)
+      nextUndoCount = undoCount
+      nextRedoCount = redoCount
     }
 
-    // undoスタック追加しないパターン
     return {
-      projects: {
-        ...currentPjs,
-        [currentPjId]: updater({ ...currentPj, updatedAt: now() }), //storeのcurrentPj部分をupdaterで取得した変更反映後pjに更新
-      },
+      // ...prevStore,
+      projects: newPjs,
+      history, // ← HistoryStack の中身は push/clear で更新済み（参照はそのまま）
+      undoCount: nextUndoCount,
+      redoCount: nextRedoCount,
     }
   })
-
-  // const store = getStore()
-  // const currentPj = getCurrentPj(getStore)
-  // setStore({
-  //   projects: {
-  //     ...store.projects,
-  //     [store.currentPjId]: updater({ ...currentPj, updatedAt: now() }), //storeのcurrentPj部分をupdaterで取得した変更反映後pjに更新
-  //   },
-  // })
 }
