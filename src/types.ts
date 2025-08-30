@@ -1,11 +1,11 @@
 import type { Node, Edge, OnNodesChange, OnEdgesChange } from '@xyflow/react'
 
+/* Nodeの中身を規定 */
 export type NodeComment = {
   id: string
   content: string
   createdAt: string
 }
-
 export type NodeData = {
   label: string
   parentId?: string | null
@@ -13,6 +13,7 @@ export type NodeData = {
   comments: NodeComment[]
 }
 
+/* 複数PJ対応 */
 export type Project = {
   id: string
   name: string
@@ -22,42 +23,43 @@ export type Project = {
   updatedAt: string
 }
 
+// PJが複数あり、それぞれにGraphを持つ
 export type Projects = Record<string, Project>
 
-// HistoryStack ClassのImplements用
-export interface Stack<T> {
-  push(item: T): void
-  pop(): T | undefined
-  clear(): void
-  readonly size: number
-  readonly isEmpty: boolean
-}
-
+/* undo/redo関連 */
+// 前後の状態を差分ではなく、Graphの状態を丸々保存
 export type StackItem = {
   nodes: Node<NodeData>[]
   edges: Edge[]
 }
-
 export type History = {
-  undoStack: Stack<StackItem>
-  redoStack: Stack<StackItem>
+  undoStack: StackItem[]
+  redoStack: StackItem[]
 }
 
+// PJ毎個別で履歴を管理
+export type HistoryByPj = Record<string, History>
+
+/* zustand store */
 export type MindMapStore = {
-  // nodes: Node<NodeData>[]
-  // edges: Edge[]
+  /* 複数PJ管理 */
   projects: Projects
   currentPjId: string
   setCurrentPjId: (newPjId: string) => void
+
   addPj: () => void
   renamePj: (pjId: string, newPjName: string) => void
   deletePj: (pjId: string) => void
+
+  /* 選択中のPJのノード・エッジ管理 */
   onNodesChange: OnNodesChange<Node<NodeData>>
   onEdgesChange: OnEdgesChange
+
   deleteNodes: (nodeIdToDelete: string) => void
   setNodes: (nodes: Node<NodeData>[]) => void
   addHorizontalElement: (parentId: string) => void
   addVerticalElement: (aboveNodeId: string, parentId: string) => void
+
   moveNodeTobeChild: (movingNodeId: string, parentId: string) => void
   moveNodeAboveTarget: (
     movingNodeId: string,
@@ -69,8 +71,10 @@ export type MindMapStore = {
     aboveNodeId: string,
     parentId: string
   ) => void
+
   updateNodeLabel: (nodeId: string, label: string) => void
   movingNodeId: string | null //移動するためにドラッグしているノード
+
   setMovingNodeId: (nodeId: string | null) => void
   focusedNodeId: string | null //focus中のノード
   setFocusedNodeId: (nodeId: string | null) => void
@@ -78,6 +82,8 @@ export type MindMapStore = {
   setEditingNodeId: (nodeId: string | null) => void
   commentPopupId: string | null //コメントをpopupするノード
   setCommentPopupId: (nodeId: string | null) => void
+
+  /* 1ノード内の情報管理 */
   updateIsDone: (nodeId: string, isDone: boolean) => void
   addComment: (nodeId: string, content: string) => void
   editComment: (
@@ -88,22 +94,22 @@ export type MindMapStore = {
   deleteComment: (nodeId: string, commentId: string) => void
   showDoneNodes: boolean
   setShowDoneNodes: (show: boolean) => void
-  history: History // undo・redo用
+
+  /* undo・redo管理 */
+  historyByPj: HistoryByPj
   undo: () => void
   redo: () => void
-  undoCount: number // undo可能回数のカウント
-  redoCount: number // redo可能回数のカウント
 }
 
 // zustandのget,set関数の同型
-export type GetStore = () => MindMapStore
-export type SetStore = (
-  partial:
-    | Partial<MindMapStore>
-    | ((state: MindMapStore) => Partial<MindMapStore>)
-) => void
+// export type GetStore = () => MindMapStore
+// export type SetStore = (
+//   partial:
+//     | Partial<MindMapStore>
+//     | ((state: MindMapStore) => Partial<MindMapStore>)
+// ) => void
 
-// trueの場合、pjの変更を反映する際に変更前状態をundoに追加する
-export type applyPjChangesOpts = {
-  addToUndo?: boolean
-}
+// // trueの場合、pjの変更を反映する際に変更前状態をundoに追加する
+// export type applyPjChangesOpts = {
+//   shouldAddToStack?: boolean
+// }

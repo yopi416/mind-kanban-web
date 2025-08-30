@@ -30,6 +30,14 @@ import { Button } from '@/components/ui/button'
 const selector = (store: MindMapStore) => {
   const currentPj = store.projects[store.currentPjId]
 
+  // historyByPj[store.currentPjId] は初回アクセスの場合存在しない = undefined
+  // undo/redoボタンのdisabled判定用にcanUndo/Redoを使用する
+  // undefinedの場合はcanUndo/redoが0なので、falseとなる
+  // undoStackに追加されるような時に、historyByPj[store.currentPjId]を作成する(store.ts)
+  const currentHistory = store.historyByPj[store.currentPjId]
+  const canUndo = (currentHistory?.undoStack.length ?? 0) > 0
+  const canRedo = (currentHistory?.redoStack.length ?? 0) > 0
+
   return {
     nodes: currentPj?.nodes ?? [],
     edges: currentPj?.edges ?? [],
@@ -48,8 +56,8 @@ const selector = (store: MindMapStore) => {
     updateIsDone: store.updateIsDone,
     undo: store.undo,
     redo: store.redo,
-    undoCount: store.undoCount,
-    redoCount: store.redoCount,
+    canUndo,
+    canRedo,
   }
 }
 
@@ -166,8 +174,8 @@ function MindMap() {
     setFocusedNodeId,
     undo,
     redo,
-    undoCount,
-    redoCount,
+    canUndo,
+    canRedo,
   } = useMindMapStore(useShallow(selector))
 
   // ノードの付け替え（ドラッグ開始時）の処理
@@ -314,10 +322,10 @@ function MindMap() {
   return (
     // <div style={{ height: '100%' }}>
     <div className="h-full w-full">
-      <Button onClick={undo} disabled={undoCount === 0}>
+      <Button onClick={undo} disabled={!canUndo}>
         undo!!!
       </Button>
-      <Button onClick={redo} disabled={redoCount === 0}>
+      <Button onClick={redo} disabled={!canRedo}>
         redo!!!
       </Button>
       <ReactFlow
