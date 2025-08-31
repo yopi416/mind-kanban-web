@@ -1,75 +1,20 @@
 import type { StackItem, NodeData, History, HistoryByPj } from '@/types'
 import type { Node, Edge } from '@xyflow/react'
 
-//  Undo/Redo用 Utils
-
-export class HistoryStack<T> implements Stack<T> {
-  private items: T[] = []
-  private readonly capacity: number
-
-  constructor(capacity: number) {
-    if (!Number.isInteger(capacity) || capacity < 1) {
-      throw new Error(`capacity must be an integer >= 1. got: ${capacity}`)
-    }
-    this.capacity = capacity
-  }
-
-  //スタックが満杯の場合、slideさせてからpush
-  push(itemToPush: T): void {
-    if (this.items.length >= this.capacity) {
-      this.items.shift()
-    }
-    this.items.push(itemToPush)
-  }
-  pop(): T | undefined {
-    return this.items.pop()
-  }
-  clear(): void {
-    this.items = []
-  }
-
-  get size(): number {
-    return this.items.length
-  }
-  get isEmpty(): boolean {
-    return this.items.length === 0
-  }
-}
-
 // undo/redoスタック追加用nodes,edgesをdeepcopy
 export const cloneSnapshot = (
   nodes: Node<NodeData>[],
-  edges: Edge[]
+  edges: Edge[],
+  focusedNodeId: string | null
 ): StackItem => {
   return {
     nodes: structuredClone(nodes),
     edges: structuredClone(edges),
+    focusedNodeId,
   }
 }
 
-// undo/redoスタック操作はpush,popなどで行われるので、Reactが変更に気づけない
-// そのため、undoCount,redoCountで、スタック変更を管理
-// この関数により、スタック変更後の状態をカウンタ同期させる
-// export const syncHistoryCounters = (history: History, setStore: SetStore) => {
-//   const { undoStack, redoStack } = history
-//   setStore({
-//     undoCount: undoStack.size,
-//     redoCount: redoStack.size,
-//   })
-// }
-
-// 変更前状態をUndoStackに追加しつつ、変更後のカウンタを返す
-// export function pushUndoItem(
-//   history: History,
-//   undoItem: StackItem
-// ): { undoCount: number; redoCount: number } {
-//   const { undoStack, redoStack } = history
-//   undoStack.push(undoItem)
-//   redoStack.clear()
-//   return { undoCount: undoStack.size, redoCount: redoStack.size }
-// }
-
-// pushの際に、上限からあふれた場合はslideする
+// 上限からあふれる場合はslideし、古いものを追い出す
 export function pushToStack(
   stack: StackItem[],
   item: StackItem,
@@ -102,9 +47,6 @@ export function pushUndoItem(
   return { undoStack: newUndoStack, redoStack: [] }
 }
 
-// 初ロード時 or PJ変更時に使用
-// historyByProjectの初期値は{}なので、[currentPjId]がundefined
-// その際にcurrentPjIdをキーとする、空Historyを作成する
 export function createEmptyHistory(): History {
   return {
     undoStack: [],
@@ -112,8 +54,10 @@ export function createEmptyHistory(): History {
   }
 }
 
-// currentPjに対応するhistoryを読み込む
-// その際に、存在しなければ空stackを作成
+// historyByProjectの初期値は{}
+// よって、最初にundoStackを操作する時に、currentPjに対応するhistoryは存在しない
+// 存在しない場合は、空Historyを作成しreturn
+
 export function getCurrentHistory(
   historyByPj: HistoryByPj,
   pjId: string

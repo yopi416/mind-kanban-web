@@ -21,6 +21,7 @@ export function createPj(id: string, name: string): Project {
   }
 }
 
+// 注意：親ノードの設定も同時に行う
 export function createNode(
   id: string,
   parentId: string | null

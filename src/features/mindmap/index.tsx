@@ -1,4 +1,3 @@
-// import { ReactFlow, Background, Controls, type NodeOrigin } from '@xyflow/react'
 import {
   ReactFlow,
   Background,
@@ -65,15 +64,11 @@ const nodeTypes = {
   custom: CustomNode,
 }
 
-// this makes the node origin to be in the center of a node
-// const nodeOrigin: NodeOrigin = [0.5, 0.5]
-
 function createShortcuts(
   state: ReturnType<typeof useMindMapStore.getState>
-): Record<string, () => void> {
+): Record<string, (e: KeyboardEvent) => void> {
   const {
     focusedNodeId,
-    // nodes,
     projects,
     currentPjId,
     setFocusedNodeId,
@@ -93,9 +88,10 @@ function createShortcuts(
   const nodes = currentPj.nodes ?? []
 
   /* Delete / Backspace 共通ハンドラを 1 個用意 */
-  const del = () => {
-    if (focusedNodeId === ROOT_NODE_ID) return // ルートは削除不可
+  const del = (e: KeyboardEvent) => {
+    e.preventDefault()
 
+    if (focusedNodeId === ROOT_NODE_ID) return // ルートは削除不可
     deleteNodes(focusedNodeId)
 
     /* フォーカスをひとつ上 or 親へ移す */
@@ -106,23 +102,26 @@ function createShortcuts(
     setFocusedNodeId(nextId)
   }
 
-  const shortcuts: Record<string, () => void> = {
+  const shortcuts: Record<string, (e: KeyboardEvent) => void> = {
     /* ---フォーカス移動--- */
-    ArrowUp: () => {
+    ArrowUp: (e) => {
+      e.preventDefault()
       const nextId = getAboveNodeId(focusedNodeId, nodes)
       if (nextId) setFocusedNodeId(nextId)
     },
-    ArrowDown: () => {
+    ArrowDown: (e) => {
+      e.preventDefault()
       const nextId = getBelowNodeId(focusedNodeId, nodes)
-      console.log(nextId)
       if (nextId) setFocusedNodeId(nextId)
     },
-    ArrowRight: () => {
+    ArrowRight: (e) => {
+      e.preventDefault()
       const nextId = getTopNodeIdByParentId(focusedNodeId, nodes)
 
       if (nextId) setFocusedNodeId(nextId)
     },
-    ArrowLeft: () => {
+    ArrowLeft: (e) => {
+      e.preventDefault()
       const nextId = getParentIdById(focusedNodeId, nodes)
 
       if (nextId) setFocusedNodeId(nextId)
@@ -133,26 +132,31 @@ function createShortcuts(
     Backspace: del,
 
     /* ---ノード追加--- */
-    Enter: () => {
+    Enter: (e) => {
+      e.preventDefault()
       const parentNodeId = getParentIdById(focusedNodeId, nodes)
       if (parentNodeId) addVerticalElement(focusedNodeId, parentNodeId)
     },
-    Tab: () => addHorizontalElement(focusedNodeId),
-
+    Tab: (e) => {
+      e.preventDefault()
+      addHorizontalElement(focusedNodeId)
+    },
     /* ---タスク完了--- */
-    d: () => {
+    d: (e) => {
+      e.preventDefault()
       const focusedNode = nodes.find((node) => node.id === focusedNodeId)
       if (focusedNode) updateIsDone(focusedNodeId, !focusedNode.data.isDone)
     },
 
     /* ノードテキスト編集 */
-
-    e: () => {
+    e: (e) => {
+      e.preventDefault()
       setEditingNodeId(focusedNodeId)
     },
 
     /* --- コメントポップアップ --- */
-    m: () => {
+    m: (e) => {
+      e.preventDefault()
       setCommentPopupId(focusedNodeId)
     },
   }
@@ -235,7 +239,6 @@ function MindMap() {
 
           if (isRight) {
             moveNodeTobeChild(movingNodeId, targetNodeId)
-            console.log('Right')
           } else {
             // ルートノードの上下には移動不可
             if (targetNodeId === ROOT_NODE_ID) {
@@ -252,10 +255,8 @@ function MindMap() {
 
             if (isTop) {
               moveNodeAboveTarget(movingNodeId, targetNodeId, parentId)
-              console.log('Top')
             } else {
               moveNodeBelowTarget(movingNodeId, targetNodeId, parentId)
-              console.log('Bottom')
             }
           }
 
@@ -306,13 +307,30 @@ function MindMap() {
       }
 
       const state = useMindMapStore.getState()
-      const shortcuts = createShortcuts(state)
+      // --- ① Undo/Redo をまずグローバルに処理 ---
+      const key = e.key.length === 1 ? e.key.toLowerCase() : e.key
 
-      const fn = shortcuts[e.key]
-      if (fn) {
-        fn()
+      // Undo: Ctrl/Cmd + Z（※Shiftなし = 純粋なUndo）
+      if ((e.ctrlKey || e.metaKey) && key === 'z' && !e.shiftKey) {
         e.preventDefault()
+        state.undo()
+        return
       }
+
+      // Redo: Ctrl+Y OR Cmd+Shift+Z
+      if (
+        (e.ctrlKey && key === 'y') ||
+        (e.metaKey && e.shiftKey && key === 'z')
+      ) {
+        e.preventDefault()
+        state.redo()
+        return
+      }
+
+      // --- ② 残りのノード操作ショートカット ---
+      const shortcuts = createShortcuts(state)
+      const fn = shortcuts[key] // ← 正規化した key を使う
+      if (fn) fn(e)
     }
 
     window.addEventListener('keydown', handleKey)

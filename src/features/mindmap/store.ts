@@ -176,7 +176,14 @@ const useMindMapStore = create(
       set({ projects: newPjs })
     },
     deleteNodes: (nodeIdToDelete: string) => {
-      const { projects: currentPjs, currentPjId, historyByPj } = get()
+      if (nodeIdToDelete === ROOT_NODE_ID) return // rootノードは削除不可
+
+      const {
+        projects: currentPjs,
+        currentPjId,
+        focusedNodeId,
+        historyByPj,
+      } = get()
       const currentPj = getCurrentPj(currentPjs, currentPjId)
 
       /* 配下のノード含め削除 */
@@ -184,9 +191,6 @@ const useMindMapStore = create(
         [nodeIdToDelete],
         currentPj.nodes
       )
-
-      // rootノードは削除不可
-      if (nodeIdToDelete.includes(ROOT_NODE_ID)) return
 
       const newNodes = currentPj.nodes.filter(
         (n) => !nodeIdsToDelete.includes(n.id)
@@ -206,7 +210,8 @@ const useMindMapStore = create(
       // 念のためdeep copyしたものを格納
       const undoItem: StackItem = cloneSnapshot(
         currentPj.nodes,
-        currentPj.edges
+        currentPj.edges,
+        focusedNodeId
       )
       const currentHistory = getCurrentHistory(historyByPj, currentPjId)
       const newHistory = pushUndoItem(currentHistory, undoItem, MAX_STACK_SIZE)
@@ -229,7 +234,12 @@ const useMindMapStore = create(
     },
     addHorizontalElement: (parentId: string) => {
       // historyはundoStack追加用に取得
-      const { projects: currentPjs, currentPjId, historyByPj } = get()
+      const {
+        projects: currentPjs,
+        currentPjId,
+        focusedNodeId,
+        historyByPj,
+      } = get()
       const currentPj = getCurrentPj(currentPjs, currentPjId)
 
       /* 子ノード群の中の最下層ノードのインデックスを取得し、その1つ下に新規ノードを挿入 */
@@ -258,7 +268,11 @@ const useMindMapStore = create(
 
       // Undo用：更新前グラフをundoStackに格納
       // 念のためdeep copyしたものを格納
-      const undoItem: StackItem = cloneSnapshot(currentNodes, currentEdges)
+      const undoItem: StackItem = cloneSnapshot(
+        currentNodes,
+        currentEdges,
+        focusedNodeId
+      )
       const currentHistory = getCurrentHistory(historyByPj, currentPjId)
       const newHistory = pushUndoItem(currentHistory, undoItem, MAX_STACK_SIZE)
       const newHistoryMap = updateHistoryMap(
@@ -267,17 +281,20 @@ const useMindMapStore = create(
         newHistory
       )
 
-      set({ projects: newPjs, historyByPj: newHistoryMap })
-
-      // newNodeがレンダリングされていないと、UI上で強調されない可能性を考慮
-      // 要検討：できれば同じsetにまとめたい
-      setTimeout(() => {
-        set({ focusedNodeId: newNodeId })
-      }, 0)
+      set({
+        projects: newPjs,
+        historyByPj: newHistoryMap,
+        focusedNodeId: newNodeId, // 新規作成したノードにfocusあてる
+      })
     },
     addVerticalElement: (aboveNodeId: string, parentId: string) => {
       // historyはundoStack追加用に取得
-      const { projects: currentPjs, currentPjId, historyByPj } = get()
+      const {
+        projects: currentPjs,
+        currentPjId,
+        focusedNodeId,
+        historyByPj,
+      } = get()
       const currentPj = getCurrentPj(currentPjs, currentPjId)
 
       /* 選択中ノード（=aboveNode）のインデックスを取得し、その1つ下に新規ノードを挿入 */
@@ -314,7 +331,11 @@ const useMindMapStore = create(
 
       // Undo用：更新前グラフをundoStackに格納
       // 念のためdeep copyしたものを格納
-      const undoItem: StackItem = cloneSnapshot(currentNodes, currentEdges)
+      const undoItem: StackItem = cloneSnapshot(
+        currentNodes,
+        currentEdges,
+        focusedNodeId
+      )
       const currentHistory = getCurrentHistory(historyByPj, currentPjId)
       const newHistory = pushUndoItem(currentHistory, undoItem, MAX_STACK_SIZE)
       const newHistoryMap = updateHistoryMap(
@@ -323,17 +344,20 @@ const useMindMapStore = create(
         newHistory
       )
 
-      set({ projects: newPjs, historyByPj: newHistoryMap })
-
-      // newNodeがレンダリングされていないと、UI上で強調されない可能性を考慮
-      // 要検討：できれば同じsetにまとめたい
-      setTimeout(() => {
-        set({ focusedNodeId: newNodeId })
-      }, 0)
+      set({
+        projects: newPjs,
+        historyByPj: newHistoryMap,
+        focusedNodeId: newNodeId, // 新規作成したノードにfocusあてる
+      })
     },
     moveNodeTobeChild: (movingNodeId: string, parentId: string) => {
       // historyByPj取得はundoスタック追加を行うため
-      const { projects: currentPjs, currentPjId, historyByPj } = get()
+      const {
+        projects: currentPjs,
+        currentPjId,
+        focusedNodeId,
+        historyByPj,
+      } = get()
       const currentPj = getCurrentPj(currentPjs, currentPjId)
       const { nodes: currentNodes, edges: currentEdges } = currentPj
 
@@ -403,7 +427,11 @@ const useMindMapStore = create(
 
       // Undo用：更新前グラフをundoStackに格納
       // 念のためdeep copyしたものを格納
-      const undoItem: StackItem = cloneSnapshot(currentNodes, currentEdges)
+      const undoItem: StackItem = cloneSnapshot(
+        currentNodes,
+        currentEdges,
+        focusedNodeId
+      )
       const currentHistory = getCurrentHistory(historyByPj, currentPjId)
       const newHistory = pushUndoItem(currentHistory, undoItem, MAX_STACK_SIZE)
       const newHistoryMap = updateHistoryMap(
@@ -421,7 +449,12 @@ const useMindMapStore = create(
       parentId: string
     ) => {
       //変更前ノード・エッジの取得
-      const { projects: currentPjs, currentPjId, historyByPj } = get()
+      const {
+        projects: currentPjs,
+        currentPjId,
+        focusedNodeId,
+        historyByPj,
+      } = get()
       const currentPj = getCurrentPj(currentPjs, currentPjId)
       const { nodes: currentNodes, edges: currentEdges } = currentPj
 
@@ -503,7 +536,11 @@ const useMindMapStore = create(
 
       // Undo用：更新前グラフをundoStackに格納
       // 念のためdeep copyしたものを格納
-      const undoItem: StackItem = cloneSnapshot(currentNodes, currentEdges)
+      const undoItem: StackItem = cloneSnapshot(
+        currentNodes,
+        currentEdges,
+        focusedNodeId
+      )
       const currentHistory = getCurrentHistory(historyByPj, currentPjId)
       const newHistory = pushUndoItem(currentHistory, undoItem, MAX_STACK_SIZE)
       const newHistoryMap = updateHistoryMap(
@@ -521,7 +558,12 @@ const useMindMapStore = create(
       parentId: string
     ) => {
       // historyByPj取得はundoスタック追加を行うため
-      const { projects: currentPjs, currentPjId, historyByPj } = get()
+      const {
+        projects: currentPjs,
+        currentPjId,
+        focusedNodeId,
+        historyByPj,
+      } = get()
       const currentPj = getCurrentPj(currentPjs, currentPjId)
       const { nodes: currentNodes, edges: currentEdges } = currentPj
 
@@ -604,7 +646,11 @@ const useMindMapStore = create(
 
       // Undo用：更新前グラフをundoStackに格納
       // 念のためdeep copyしたものを格納
-      const undoItem: StackItem = cloneSnapshot(currentNodes, currentEdges)
+      const undoItem: StackItem = cloneSnapshot(
+        currentNodes,
+        currentEdges,
+        focusedNodeId
+      )
       const currentHistory = getCurrentHistory(historyByPj, currentPjId)
       const newHistory = pushUndoItem(currentHistory, undoItem, MAX_STACK_SIZE)
       const newHistoryMap = updateHistoryMap(
@@ -667,7 +713,12 @@ const useMindMapStore = create(
       })
     },
     updateIsDone: (nodeId: string, isDone: boolean) => {
-      const { projects: currentPjs, currentPjId, historyByPj } = get()
+      const {
+        projects: currentPjs,
+        currentPjId,
+        focusedNodeId,
+        historyByPj,
+      } = get()
       const currentPj = getCurrentPj(currentPjs, currentPjId)
       const { nodes: currentNodes, edges: currentEdges } = currentPj
 
@@ -690,7 +741,11 @@ const useMindMapStore = create(
 
       // Undo用：更新前グラフをundoStackに格納
       // 念のためdeep copyしたものを格納
-      const undoItem: StackItem = cloneSnapshot(currentNodes, currentEdges)
+      const undoItem: StackItem = cloneSnapshot(
+        currentNodes,
+        currentEdges,
+        focusedNodeId
+      )
       const currentHistory = getCurrentHistory(historyByPj, currentPjId)
       const newHistory = pushUndoItem(currentHistory, undoItem, MAX_STACK_SIZE)
       const newHistoryMap = updateHistoryMap(
@@ -702,7 +757,12 @@ const useMindMapStore = create(
       set({ projects: newPjs, historyByPj: newHistoryMap })
     },
     addComment: (nodeId: string, content: string) => {
-      const { projects: currentPjs, currentPjId, historyByPj } = get()
+      const {
+        projects: currentPjs,
+        currentPjId,
+        focusedNodeId,
+        historyByPj,
+      } = get()
       const currentPj = getCurrentPj(currentPjs, currentPjId)
       const { nodes: currentNodes, edges: currentEdges } = currentPj
 
@@ -731,7 +791,11 @@ const useMindMapStore = create(
 
       // Undo用：更新前グラフをundoStackに格納
       // 念のためdeep copyしたものを格納
-      const undoItem: StackItem = cloneSnapshot(currentNodes, currentEdges)
+      const undoItem: StackItem = cloneSnapshot(
+        currentNodes,
+        currentEdges,
+        focusedNodeId
+      )
       const currentHistory = getCurrentHistory(historyByPj, currentPjId)
       const newHistory = pushUndoItem(currentHistory, undoItem, MAX_STACK_SIZE)
       const newHistoryMap = updateHistoryMap(
@@ -747,7 +811,12 @@ const useMindMapStore = create(
       commentId: string,
       updatedContent: string
     ) => {
-      const { projects: currentPjs, currentPjId, historyByPj } = get()
+      const {
+        projects: currentPjs,
+        currentPjId,
+        focusedNodeId,
+        historyByPj,
+      } = get()
       const currentPj = getCurrentPj(currentPjs, currentPjId)
       const { nodes: currentNodes, edges: currentEdges } = currentPj
 
@@ -777,7 +846,11 @@ const useMindMapStore = create(
 
       // Undo用：更新前グラフをundoStackに格納
       // 念のためdeep copyしたものを格納
-      const undoItem: StackItem = cloneSnapshot(currentNodes, currentEdges)
+      const undoItem: StackItem = cloneSnapshot(
+        currentNodes,
+        currentEdges,
+        focusedNodeId
+      )
       const currentHistory = getCurrentHistory(historyByPj, currentPjId)
       const newHistory = pushUndoItem(currentHistory, undoItem, MAX_STACK_SIZE)
       const newHistoryMap = updateHistoryMap(
@@ -789,7 +862,12 @@ const useMindMapStore = create(
       set({ projects: newPjs, historyByPj: newHistoryMap })
     },
     deleteComment: (nodeId: string, commentId: string) => {
-      const { projects: currentPjs, currentPjId, historyByPj } = get()
+      const {
+        projects: currentPjs,
+        currentPjId,
+        focusedNodeId,
+        historyByPj,
+      } = get()
       const currentPj = getCurrentPj(currentPjs, currentPjId)
       const { nodes: currentNodes, edges: currentEdges } = currentPj
 
@@ -814,7 +892,11 @@ const useMindMapStore = create(
 
       // Undo用：更新前グラフをundoStackに格納
       // 念のためdeep copyしたものを格納
-      const undoItem: StackItem = cloneSnapshot(currentNodes, currentEdges)
+      const undoItem: StackItem = cloneSnapshot(
+        currentNodes,
+        currentEdges,
+        focusedNodeId
+      )
       const currentHistory = getCurrentHistory(historyByPj, currentPjId)
       const newHistory = pushUndoItem(currentHistory, undoItem, MAX_STACK_SIZE)
       const newHistoryMap = updateHistoryMap(
@@ -833,8 +915,31 @@ const useMindMapStore = create(
     },
     /* undo・redo管理 */
     historyByPj: {},
+    pushPrevGraphToUndo: (currentPjId: string, prevGraph: StackItem) => {
+      const { historyByPj } = get()
+
+      const undoItem: StackItem = cloneSnapshot(
+        prevGraph.nodes,
+        prevGraph.edges,
+        prevGraph.focusedNodeId
+      )
+      const currentHistory = getCurrentHistory(historyByPj, currentPjId)
+      const newHistory = pushUndoItem(currentHistory, undoItem, MAX_STACK_SIZE)
+      const newHistoryMap = updateHistoryMap(
+        historyByPj,
+        currentPjId,
+        newHistory
+      )
+
+      set({ historyByPj: newHistoryMap })
+    },
     undo: () => {
-      const { projects: currentPjs, currentPjId, historyByPj } = get()
+      const {
+        projects: currentPjs,
+        focusedNodeId,
+        currentPjId,
+        historyByPj,
+      } = get()
       const history = getCurrentHistory(historyByPj, currentPjId)
       const currentPj = getCurrentPj(currentPjs, currentPjId)
       const { undoStack, redoStack } = history
@@ -842,7 +947,11 @@ const useMindMapStore = create(
       const [poppedItem, newUndoStack] = popFromStack(undoStack)
       if (!poppedItem) return //pop対象0の場合undefinedを返すため
 
-      const redoItem = cloneSnapshot(currentPj.nodes, currentPj.edges)
+      const redoItem = cloneSnapshot(
+        currentPj.nodes,
+        currentPj.edges,
+        focusedNodeId
+      )
       const newRedoStack = pushToStack(redoStack, redoItem, MAX_STACK_SIZE)
 
       const restoredPj = updateGraphInPj(
@@ -865,13 +974,18 @@ const useMindMapStore = create(
       set({
         projects: restoredPjs,
         historyByPj: newHistoryMap,
-        focusedNodeId: null,
+        focusedNodeId: poppedItem.focusedNodeId,
         editingNodeId: null,
         commentPopupId: null,
       })
     },
     redo: () => {
-      const { projects: currentPjs, currentPjId, historyByPj } = get()
+      const {
+        projects: currentPjs,
+        currentPjId,
+        focusedNodeId,
+        historyByPj,
+      } = get()
       const history = getCurrentHistory(historyByPj, currentPjId)
       const currentPj = getCurrentPj(currentPjs, currentPjId)
       const { undoStack, redoStack } = history
@@ -879,7 +993,11 @@ const useMindMapStore = create(
       const [poppedItem, newRedoStack] = popFromStack(redoStack)
       if (!poppedItem) return //pop対象0の場合undefinedを返すため
 
-      const undoItem = cloneSnapshot(currentPj.nodes, currentPj.edges)
+      const undoItem = cloneSnapshot(
+        currentPj.nodes,
+        currentPj.edges,
+        focusedNodeId
+      )
       const newUndoStack = pushToStack(undoStack, undoItem, MAX_STACK_SIZE)
 
       const restoredPj = updateGraphInPj(
@@ -902,7 +1020,7 @@ const useMindMapStore = create(
       set({
         projects: restoredPjs,
         historyByPj: newHistoryMap,
-        focusedNodeId: null,
+        focusedNodeId: poppedItem.focusedNodeId,
         editingNodeId: null,
         commentPopupId: null,
       })
