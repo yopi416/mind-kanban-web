@@ -8,11 +8,17 @@ import { CiCirclePlus } from 'react-icons/ci' //plusIcon
 import useMindMapStore from '../store'
 import { useShallow } from 'zustand/shallow'
 import clsx from 'clsx'
-import { type NodeData, type MindMapStore } from '../../../types.ts'
+import {
+  type NodeData,
+  type MindMapStore,
+  type EditSnapshot,
+} from '../../../types.ts'
 import { CommentPopover } from './CommentPopover.tsx'
 import { Checkbox } from '@/components/ui/checkbox'
 // import { set } from 'lodash'
 import { MAX_NODE_LABEL_LENGTH } from '../constants.ts'
+import { getCurrentPj } from '../utils/projectUtils.ts'
+import { getNodeIdxById } from '../utils/nodeTreeUtils.ts'
 
 type HoverZone = 'left-top' | 'left-bottom' | 'right' | null
 
@@ -24,12 +30,15 @@ const selector = (store: MindMapStore) => ({
   setEditingNodeId: store.setEditingNodeId,
   setCommentPopupId: store.setCommentPopupId,
   updateIsDone: store.updateIsDone,
+  pushPrevGraphToUndo: store.pushPrevGraphToUndo,
 })
 
 function CustomNode({ id, data }: NodeProps<Node<NodeData>>) {
   // console.log(`${new Date().toLocaleString()} 再描画:`, id)
 
-  /* zustan-storeから呼び出し */
+  // 本コードの後に、useMindMapStoreではなくsubscribeでしている部分がある
+  // subscribe対象：focusedNodeId, editingNodeId, movingNodeId, commentPopupId
+  // subscribe理由：ここでfocsudNodeIdを取得しisFocusedの判定に用いると、他ノードFocus時も再レンダリングされるため
   const {
     updateNodeLabel,
     addHorizontalElement,
@@ -38,9 +47,11 @@ function CustomNode({ id, data }: NodeProps<Node<NodeData>>) {
     setEditingNodeId,
     setCommentPopupId,
     updateIsDone,
+    pushPrevGraphToUndo,
   } = useMindMapStore(useShallow(selector))
 
-  /* 自ノードがfocus時に枠色を強調 */
+  /* 自ノードがfocusされている時に枠色を強調 */
+  // div側で isFocusedがtrueであれば枠色を青色に
   const [isFocused, setIsFocused] = useState<boolean>(false) //自ノードがフォーカスされているかのフラグ
 
   useEffect(() => {
@@ -55,14 +66,39 @@ function CustomNode({ id, data }: NodeProps<Node<NodeData>>) {
     return () => unsub()
   }, [id])
 
-  /* 編集モードがフラグがたったら、編集モードへ移行 */
+  /* ノードのテキスト入力状態の管理 */
+
+  // true時はtextareaがpointer-events-auto + Focus状態（編集状態）となる
+  // pointer-events = none ⇒ クリックできない状態
+  // よって、ノードドラッグ時には、textareaを反応させなくする効果もある
+
+  // editingNodeIdが自ノードになる条件は2つある
+  // 1. Focus時にショートカット(index.tsxで規定) eを押した時
+  // 2. Focus時に、ノードをクリックした時（本ノードのonClickイベントであるenterEditで規定）
+
+  const [isEditing, setIsEditing] = useState(false)
+
+  // undoStack追加用
+  // const [snapshotToUndo, setSnapshotToUndo] = useState<EditSnapshot | null>(null)
+  const snapshotRef = useRef<EditSnapshot | null>(null)
+
+  const textAreaRef = useRef<HTMLTextAreaElement>(null) //textareaへのref
+
   useEffect(() => {
     const unsub = useMindMapStore.subscribe(
       (state) => state.editingNodeId,
       (newId) => {
         if (newId === id) {
           setIsEditing(true)
-          setTimeout(() => textAreaRef.current?.focus(), 0)
+          setTimeout(() => textAreaRef.current?.focus(), 0) //ここでtextareaをFocus
+
+          // Undo用: 編集開始直前の状態を保存
+          const { projects, currentPjId, focusedNodeId } =
+            useMindMapStore.getState()
+          const { nodes, edges } = getCurrentPj(projects, currentPjId)
+          const deepCopy = structuredClone({ nodes, edges, focusedNodeId })
+          snapshotRef.current = { pjId: currentPjId, ...deepCopy }
+          // setSnapshotToUndo({ pjId: currentPjId, nodes, edges })
         }
       },
       { fireImmediately: true }
@@ -71,7 +107,110 @@ function CustomNode({ id, data }: NodeProps<Node<NodeData>>) {
     return () => unsub()
   }, [id])
 
-  /* ノードの付け替え時に色を付ける処理 */
+  // textareaに適用
+  const textAreaCls = clsx(
+    // 'w-60 resize-none overflow-hidden px-3 pt-1 text-center text-2xl',
+    'w-60 resize-none overflow-hidden px-3 pt-1 text-center text-2xl',
+    'whitespace-pre-wrap break-words',
+    isEditing
+      ? 'relative z-[2] pointer-events-auto focus:outline-none'
+      : 'pointer-events-none select-none opacity-90'
+  )
+
+  // 全体ラップするdivのonClickハンドラ
+  // Focusされていない時は、Focusを自ノードに当てる
+  const enterEdit = () => {
+    if (isFocused) {
+      setEditingNodeId(id)
+    } else {
+      setFocusedNodeId(id)
+    }
+  }
+
+  // textareaのonBlur(focusが外れた時)ハンドラ
+  // - 編集状態を終了する
+  // - 編集があったならば、編集前状態をundoStackに追加
+  const leaveEdit = () => {
+    setIsEditing(false)
+    setEditingNodeId(null)
+
+    // snapshotがとられていない状態だと、UndoStackには保存しないようにする
+    // この場合は起こる可能性はなさそうだが、念のため
+    if (!snapshotRef || !snapshotRef.current) return
+
+    // if(!snapshotToUndo){
+    //   setSnapshotToUndo(null)
+    //   return
+    // }
+
+    const { projects } = useMindMapStore.getState()
+    const currentPjId = snapshotRef.current.pjId
+    // const currentPjId = snapshotToUndo.pjId
+
+    const { nodes } = getCurrentPj(projects, currentPjId)
+    const currentNodeIdx = getNodeIdxById(id, nodes)
+
+    const prevNodes: Node<NodeData>[] = snapshotRef.current.nodes
+    // const prevNodes: Node<NodeData>[] = snapshotToUndo.nodes
+    const prevNodeIdx = getNodeIdxById(id, prevNodes)
+
+    if (currentNodeIdx === -1 || prevNodeIdx === -1) {
+      snapshotRef.current = null
+      // setSnapshotToUndo(null)
+      return
+    }
+
+    const currentLabel = nodes[currentNodeIdx].data.label
+    const prevLabel = prevNodes[prevNodeIdx].data.label
+
+    // テキストエリアが編集前後で同じ状態の場合はundoStackに保存しない
+    if (currentLabel === prevLabel) {
+      // setSnapshotToUndo(null)
+      snapshotRef.current = null
+      return
+    }
+
+    // 編集前状態をUndoStackに追加し初期化
+    pushPrevGraphToUndo(currentPjId, {
+      nodes: prevNodes,
+      edges: snapshotRef.current.edges,
+      focusedNodeId: snapshotRef.current.focusedNodeId,
+    })
+    snapshotRef.current = null
+  }
+
+  /* テキスト入力状態時の処理 */
+  // - 編集内容を zustand store に反映する
+  // - 入力に応じて textarea の高さを自動調整する（横幅は固定）
+
+  // 高さ調整
+  const resizeTextArea = (el: HTMLTextAreaElement) => {
+    if (!el) return
+    el.style.height = '0px' // or 'auto'
+    el.style.height = `${el.scrollHeight}px`
+  }
+
+  // textareaのonChangeハンドラ
+  // 入力テキストをzustand store同期
+  // & textareaの高さ調整
+  const handleChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    const limitedLengthLabel = e.target.value.slice(0, MAX_NODE_LABEL_LENGTH) // 入力文字数制限
+
+    updateNodeLabel(id, limitedLengthLabel)
+    e.currentTarget.value = limitedLengthLabel
+    resizeTextArea(e.currentTarget) //高さを変更
+  }
+
+  // マウント直後 & ノードのラベル更新時に高さ調整
+  // 要検討：handleChangeにも含まれている処理であるが、念のため導入。不要な可能性有。
+  useLayoutEffect(() => {
+    if (textAreaRef.current) {
+      resizeTextArea(textAreaRef.current)
+    }
+  }, [data.label])
+
+  /* ノードのドラッグ移動時に色を付ける処理 */
+
   const [hoverPosition, setHoverPosition] = useState<HoverZone>(null)
   const [isHighlight, setIsHighlight] = useState<boolean>(false)
 
@@ -110,7 +249,7 @@ function CustomNode({ id, data }: NodeProps<Node<NodeData>>) {
     }
 
     const shouldHighlight =
-      movingNodeIdRef.current !== null && movingNodeIdRef.current != id
+      movingNodeIdRef.current !== null && movingNodeIdRef.current !== id
 
     setIsHighlight((prev) =>
       prev !== shouldHighlight ? shouldHighlight : prev
@@ -119,37 +258,6 @@ function CustomNode({ id, data }: NodeProps<Node<NodeData>>) {
 
   const handleMouseLeave = () => {
     setHoverPosition(null)
-  }
-
-  /* ---textareaとHandle(source)どちらが動作するかの管理--- */
-
-  // textareaをpointer-events-autoにするかのフラグ
-  const [isEditing, setIsEditing] = useState(false)
-
-  // textarea の className
-  const textAreaCls = clsx(
-    // 'w-60 resize-none overflow-hidden px-3 pt-1 text-center text-2xl',
-    'w-60 resize-none overflow-hidden px-3 pt-1 text-center text-2xl',
-    'whitespace-pre-wrap break-words',
-    isEditing
-      ? 'relative z-[2] pointer-events-auto focus:outline-none'
-      : 'pointer-events-none select-none opacity-90'
-  )
-
-  // 編集モードへ移行するクリックハンドラ
-  const enterEdit = () => {
-    if (isFocused) {
-      setEditingNodeId(id)
-    } else {
-      setFocusedNodeId(id)
-    }
-  }
-
-  // blur(focusが外れた時)で編集終了
-  const leaveEdit = () => {
-    setIsEditing(false)
-    setEditingNodeId(null)
-    console.log('eeeee')
   }
 
   /* --- コメントポップアップ用 --- */
@@ -166,31 +274,6 @@ function CustomNode({ id, data }: NodeProps<Node<NodeData>>) {
 
     return () => unsub()
   }, [id])
-
-  /* ---テキスト変更時に、zustandstoreに反映&テキストボックスリサイズする処理--- */
-  const textAreaRef = useRef<HTMLTextAreaElement>(null) //ノードのテキストへのrefへのref
-
-  const resizeTextArea = (el: HTMLTextAreaElement) => {
-    if (!el) return
-    el.style.height = '0px' // or 'auto'
-    el.style.height = `${el.scrollHeight}px`
-  }
-
-  // ノードのテキストを更新 & 入力中に textareaのwidth を更新する
-  const handleChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    const limitedLengthLabel = e.target.value.slice(0, MAX_NODE_LABEL_LENGTH) // 入力文字数制限
-
-    updateNodeLabel(id, limitedLengthLabel)
-    e.currentTarget.value = limitedLengthLabel
-    resizeTextArea(e.currentTarget) //高さを変更
-  }
-
-  // マウント直後 & ノードのラベル更新が起こったときにに textareaのwidth を合わせる
-  useLayoutEffect(() => {
-    if (textAreaRef.current) {
-      resizeTextArea(textAreaRef.current)
-    }
-  }, [data.label])
 
   return (
     <div
@@ -229,6 +312,7 @@ function CustomNode({ id, data }: NodeProps<Node<NodeData>>) {
 
         {/* 右端のボタン群 */}
         <div className="flex items-center gap-2">
+          {/* 真下にノード追加 */}
           {data.parentId && (
             <button
               type="button"
@@ -239,6 +323,8 @@ function CustomNode({ id, data }: NodeProps<Node<NodeData>>) {
             </button>
           )}
 
+          {/* 子ノード追加 */}
+
           <button
             type="button"
             onClick={() => addHorizontalElement(id)}
@@ -247,6 +333,7 @@ function CustomNode({ id, data }: NodeProps<Node<NodeData>>) {
             <CiCirclePlus size={20} />
           </button>
 
+          {/* タスクの完了状態を変更 */}
           <Checkbox
             checked={data.isDone}
             onClick={(e) => e.stopPropagation()}
@@ -257,7 +344,10 @@ function CustomNode({ id, data }: NodeProps<Node<NodeData>>) {
             )}
           />
 
+          {/* カンバンボード連携 */}
           <RiKanbanView2 size={20} />
+
+          {/* コメント画面出力・コメント記載用コンポーネントの呼び出し */}
           <CommentPopover
             id={id}
             data={data}
@@ -278,7 +368,10 @@ function CustomNode({ id, data }: NodeProps<Node<NodeData>>) {
         tabIndex={isEditing ? 0 : -1} // 編集中以外はフォーカス対象外
         onKeyDown={(e) => {
           //Ctrl + Enterで入力完了
-          if ((e.ctrlKey && e.key === 'Enter') || e.key === 'Escape') {
+          if (
+            ((e.ctrlKey || e.metaKey) && e.key === 'Enter') ||
+            e.key === 'Escape'
+          ) {
             e.preventDefault()
             textAreaRef.current?.blur()
           }

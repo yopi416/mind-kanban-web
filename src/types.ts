@@ -31,6 +31,7 @@ export type Projects = Record<string, Project>
 export type StackItem = {
   nodes: Node<NodeData>[]
   edges: Edge[]
+  focusedNodeId: string | null
 }
 export type History = {
   undoStack: StackItem[]
@@ -39,6 +40,14 @@ export type History = {
 
 // PJ毎個別で履歴を管理
 export type HistoryByPj = Record<string, History>
+
+// CustomNode.tsxのtextarea編集のundo管理に使用
+export type EditSnapshot = {
+  pjId: string
+  nodes: Node<NodeData>[]
+  edges: Edge[]
+  focusedNodeId: string | null
+}
 
 /* zustand store */
 export type MindMapStore = {
@@ -97,19 +106,8 @@ export type MindMapStore = {
 
   /* undo・redo管理 */
   historyByPj: HistoryByPj
+  pushPrevGraphToUndo: (currentPjId: string, prevGraph: StackItem) => void
+
   undo: () => void
   redo: () => void
 }
-
-// zustandのget,set関数の同型
-// export type GetStore = () => MindMapStore
-// export type SetStore = (
-//   partial:
-//     | Partial<MindMapStore>
-//     | ((state: MindMapStore) => Partial<MindMapStore>)
-// ) => void
-
-// // trueの場合、pjの変更を反映する際に変更前状態をundoに追加する
-// export type applyPjChangesOpts = {
-//   shouldAddToStack?: boolean
-// }

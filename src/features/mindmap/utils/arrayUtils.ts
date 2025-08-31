@@ -1,3 +1,5 @@
+/* ノードの移動・追加に合わせて、nodesやedgesの順番を変更する際に使用 */
+
 export function insertBefore<T>(
   array: T[],
   insertedElement: T[],
