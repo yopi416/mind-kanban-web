@@ -409,7 +409,6 @@ const useMindMapStore = create(
 
       // 最下エッジのidxを取得
       const bottomEdgeIdx = findBottomEdgeIdx(parentId, edgesWithoutMovingEdges)
-      console.log(bottomEdgeIdx)
 
       // 移動するエッジ群を挿入
       const newEdges = insertAfter(
