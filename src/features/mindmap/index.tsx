@@ -25,6 +25,7 @@ import {
 import '@xyflow/react/dist/style.css'
 import { ROOT_NODE_ID } from './constants'
 import { Button } from '@/components/ui/button'
+import { FaUndoAlt, FaRedoAlt } from 'react-icons/fa'
 
 const selector = (store: MindMapStore) => {
   const currentPj = store.projects[store.currentPjId]
@@ -340,11 +341,11 @@ function MindMap() {
   return (
     // <div style={{ height: '100%' }}>
     <div className="h-full w-full">
-      <Button onClick={undo} disabled={!canUndo}>
-        undo!!!
+      <Button onClick={undo} disabled={!canUndo} size="sm">
+        <FaUndoAlt size={10} />
       </Button>
-      <Button onClick={redo} disabled={!canRedo}>
-        redo!!!
+      <Button onClick={redo} disabled={!canRedo} size="sm">
+        <FaRedoAlt size={10} />
       </Button>
       <ReactFlow
         nodes={nodes}
