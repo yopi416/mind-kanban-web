@@ -1,35 +1,55 @@
 import { Button } from '@/components/ui/button'
-import { useState } from 'react'
+import { useCallback, useState } from 'react'
+import { TestSomething2 } from './TestSomething2'
+
+// const DisplayCurrentNum = () => {
+//   const [state, setState] = useState<number>(0)
+//   const clickHandler = () => {
+//     setState((prev) => prev + 1)
+//   }
+
+//   console.log("I am DisplaycurrentNum")
+
+//   return (
+//     <div>
+//       <Button onClick={clickHandler}>
+//         Button
+//       </Button>
+//       <p>current number is {state}</p>
+//     </div>
+//   )
+
+// }
 
 export const TestSomething = () => {
-  type obj = {
-    id: number
-    name: string
+  console.log('I am Something1')
+  const [state, setState] = useState<number>(0)
+  const onClick = () => setState(state + 1)
+
+  const hello = useCallback(() => {
+    console.log('Hello!!!')
+  }, [])
+
+  function sleepSync(ms: number): number {
+    const end = Date.now() + ms
+    while (Date.now() < end) {
+      // ブロッキング
+    }
+    return 1000
   }
 
-  const [state, setState] = useState<obj>({ id: 1, name: 'Tanaka' })
+  const aug: number = 3000
 
-  const updateName = (newName: string) => {
-    setState((prev: obj) => {
-      console.log(prev === state)
-      prev.name = 'sameRef'
-      console.log(prev === state)
-
-      const newState = { ...prev, name: newName }
-      console.log(newState === state)
-      return newState
-    })
-  }
+  const sleepResult = sleepSync(aug)
 
   return (
     <div>
-      <Button
-        onClick={() => {
-          updateName('newName')
-        }}
-      >
-        {state.name}
-      </Button>
+      {/* <DisplayCurrentNum /> */}
+      <Button onClick={onClick}>Button</Button>
+      <p>current Number is {state}</p>
+      <p>current Number is {sleepResult}</p>
+
+      <TestSomething2 hello={hello} />
     </div>
   )
 }

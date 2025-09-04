@@ -1,5 +1,5 @@
 // import MindMap from './features/mindmap'
-import Kanban from './features/kanban'
+// import Kanban from './features/kanban'
 import MindMapPage from './pages/MindMapPage'
 
 function App() {
@@ -7,7 +7,7 @@ function App() {
     <>
       <MindMapPage />
       {/* <MindMap /> */}
-      <Kanban />
+      {/* <Kanban /> */}
     </>
   )
 }
