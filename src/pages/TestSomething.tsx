@@ -1,6 +1,6 @@
-import { Button } from '@/components/ui/button'
-import { useCallback, useState } from 'react'
-import { TestSomething2 } from './TestSomething2'
+// import { Button } from '@/components/ui/button'
+// import { useCallback, useState } from 'react'
+// import { TestSomething2 } from './TestSomething2'
 
 // const DisplayCurrentNum = () => {
 //   const [state, setState] = useState<number>(0)
@@ -22,34 +22,8 @@ import { TestSomething2 } from './TestSomething2'
 // }
 
 export const TestSomething = () => {
-  console.log('I am Something1')
-  const [state, setState] = useState<number>(0)
-  const onClick = () => setState(state + 1)
+  const visilble: boolean = false
+  const htmlTag = visilble ? <div></div> : <div>invisible</div>
 
-  const hello = useCallback(() => {
-    console.log('Hello!!!')
-  }, [])
-
-  function sleepSync(ms: number): number {
-    const end = Date.now() + ms
-    while (Date.now() < end) {
-      // ブロッキング
-    }
-    return 1000
-  }
-
-  const aug: number = 3000
-
-  const sleepResult = sleepSync(aug)
-
-  return (
-    <div>
-      {/* <DisplayCurrentNum /> */}
-      <Button onClick={onClick}>Button</Button>
-      <p>current Number is {state}</p>
-      <p>current Number is {sleepResult}</p>
-
-      <TestSomething2 hello={hello} />
-    </div>
-  )
+  return htmlTag
 }
