@@ -222,32 +222,35 @@ export function KanbanPage() {
     if (movedInFrameRef.current) return
 
     setCardContainers((prevContainers) => {
-      console.log('aaa')
       const activeCards = prevContainers[activeContainerKey] //ドラッグ中カードが所属するコンテナのCard[]
       const activeCard = activeCards.find((card) => card.id === active.id)
       if (!activeCard) return prevContainers
 
       const overCards = prevContainers[overContainerKey] //overカードが所属するコンテナのCard[]
-      // const overCard = overCards.find((card) => card.id === over.id)
-      // if(!overCard) return prevContainers
+
+      // Drop先がContainer本体の場合(Containerが空)  -1になる
       const overCardIndex = overCards.findIndex((card) => card.id === over.id)
 
       const isBelowOverItm =
         active.rect.current.translated &&
         active.rect.current.translated.top > over.rect.top + over.rect.height
 
-      // const modifier = isBelowOverItm ? 1 : 0
-
-      // const indexToInsert = overCardIndex >= 0 ? overCardIndex + modifier : overCards.length
+      // Drop先がContainer本体の場合, :後の判定の値になる
+      // ⇒ 先頭(カード無し時の対応) OR 末尾（カード有時）
       const insertIndexRaw =
         overCardIndex >= 0
           ? overCardIndex + (isBelowOverItm ? 1 : 0)
           : overCards.length
+
+      // 範囲外アクセスを防止
       const insertIndex = Math.max(
-        0,
-        Math.min(overCards.length, insertIndexRaw)
+        0, // 下限は0
+        Math.min(overCards.length, insertIndexRaw) // 上限は配列長
       )
 
+      // 前回のソートと同じ状況ならば,更新しない
+      // コンテナ間移動時に、1度だけこれにより無駄なレンダリング防止できるぐらい
+      // よって、正直効果は薄いのだが、レンダリング回数削減のために残す
       if (
         lastPlacementRef.current &&
         lastPlacementRef.current.id === active.id &&
@@ -257,7 +260,7 @@ export function KanbanPage() {
         return prevContainers
       }
 
-      // すでに同じ位置相当なら更新しない
+      // ↑と同じくなくてもよいが、念のため残す
       if (
         overCards[insertIndex]?.id === active.id ||
         (overCardIndex < 0 && overCards[overCards.length - 1]?.id === active.id)
@@ -275,13 +278,17 @@ export function KanbanPage() {
         ...overCards.slice(insertIndex),
       ]
 
-      // 記録 & 1フレーム間引き
+      // 更新前に今回の更新情報を保持
+      // 本情報を基に次回のhandleDragOverにて、同じ処理を使用としているかを判断
+      // 同じ処理の場合 return
       lastPlacementRef.current = {
         id: active.id,
         to: overContainerKey,
         index: insertIndex,
       }
-      movedInFrameRef.current = true
+
+      // setStateが行われるのを1フレームに1回とする
+      movedInFrameRef.current = true // 次フレームまでは、handleDragOverを即returnする
       requestAnimationFrame(() => (movedInFrameRef.current = false))
 
       return {
