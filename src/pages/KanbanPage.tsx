@@ -6,8 +6,8 @@ import type {
   UniqueIdentifier,
 } from '@dnd-kit/core'
 import { SortableContext, useSortable, arrayMove } from '@dnd-kit/sortable'
-import { useMemo, useState, useRef } from 'react'
-import type { ComponentProps } from 'react'
+import { useMemo, useState, useRef, forwardRef } from 'react'
+import type { ComponentPropsWithoutRef } from 'react'
 // import { nanoid } from 'nanoid'
 import { CSS } from '@dnd-kit/utilities'
 
@@ -18,25 +18,19 @@ type Card = {
 // type ContainerKey = "backlog" | "todo" | "doing" | "done"
 type CardContainer = Record<string, Card[]>
 
-type ItemProps = ComponentProps<'div'>
+// React19より、fowardRef不要になったようだが、念のためfowardRefを使用
+type ItemProps = ComponentPropsWithoutRef<'div'>
 
-// const Item = forwardRef<HTMLDivElement, ItemProps>(({ children, ...props }, ref) => {
-//   return (
-//     <div ref={ref} {...props}>
-//       {children}
-//     </div>
-//   );
-// });
-// Item.displayName = 'Item';
-
-const Item = ({ ref, ...props }: ItemProps) => {
-  return (
-    <div ref={ref} {...props}>
-      {props.children}
-    </div>
-  )
-}
-// Item.displayName = 'Item';
+const Item = forwardRef<HTMLDivElement, ItemProps>(
+  ({ children, ...props }, ref) => {
+    return (
+      <div ref={ref} {...props}>
+        {children}
+      </div>
+    )
+  }
+)
+Item.displayName = 'Item'
 
 type SortableProps = Card & { activeCardId: UniqueIdentifier | null }
 
