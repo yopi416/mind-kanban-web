@@ -1,11 +1,13 @@
-import { DndContext, useDroppable } from '@dnd-kit/core'
+import { DndContext, useDroppable, DragOverlay } from '@dnd-kit/core'
 import type {
   DragEndEvent,
   DragOverEvent,
+  DragStartEvent,
   UniqueIdentifier,
 } from '@dnd-kit/core'
 import { SortableContext, useSortable, arrayMove } from '@dnd-kit/sortable'
 import { useMemo, useState, useRef } from 'react'
+import type { ComponentProps } from 'react'
 // import { nanoid } from 'nanoid'
 import { CSS } from '@dnd-kit/utilities'
 
@@ -16,25 +18,61 @@ type Card = {
 // type ContainerKey = "backlog" | "todo" | "doing" | "done"
 type CardContainer = Record<string, Card[]>
 
-function Sortable(props: Card) {
+type ItemProps = ComponentProps<'div'>
+
+// const Item = forwardRef<HTMLDivElement, ItemProps>(({ children, ...props }, ref) => {
+//   return (
+//     <div ref={ref} {...props}>
+//       {children}
+//     </div>
+//   );
+// });
+// Item.displayName = 'Item';
+
+const Item = ({ ref, ...props }: ItemProps) => {
+  return (
+    <div ref={ref} {...props}>
+      {props.children}
+    </div>
+  )
+}
+// Item.displayName = 'Item';
+
+type SortableProps = Card & { activeCardId: UniqueIdentifier | null }
+
+function Sortable(props: SortableProps) {
+  const { id: myOwnCardId, title, activeCardId } = props
+
   const { attributes, listeners, setNodeRef, transform, transition } =
-    useSortable({ id: props.id })
+    useSortable({ id: myOwnCardId })
 
   const style = {
     transform: CSS.Transform.toString(transform),
     transition,
   }
 
+  const isActive = activeCardId === myOwnCardId //dragされている時true
+
+  let cls =
+    'rounded-lg border bg-white p-3 shadow-sm transition-all duration-150'
+
+  if (isActive) {
+    // dragされている時薄くなる + 縮む
+    cls += ' opacity-40 scale-95 rotate-[0.2deg] border-slate-400'
+  } else {
+    cls += ' border-slate-200'
+  }
+
   return (
-    <div
+    <Item
       ref={setNodeRef}
       style={style}
-      className="rounded-lg border border-slate-200 bg-white p-3 shadow-sm"
+      className={cls}
       {...attributes}
       {...listeners}
     >
-      {props.title}
-    </div>
+      {title}
+    </Item>
   )
 }
 
@@ -83,6 +121,20 @@ export function KanbanPage() {
   const [cardContainers, setCardContainers] =
     useState<CardContainer>(initialCards)
 
+  const [activeCardId, setActiveCardId] = useState<UniqueIdentifier | null>(
+    null
+  )
+
+  function findContainerKeyByCardId(cardId: string): string | undefined {
+    return cardIdToContainerKey.get(cardId)
+  }
+
+  function findContainerKeyByContainerId(
+    containerId: string
+  ): string | undefined {
+    return cardContainers[containerId] ? containerId : undefined
+  }
+
   // 全Containers中のカードに対して、 card.id: containerKey(格納先コンテナ) のMapを作成
   // このmapにより、指定したcardの格納先ContainerKeyをO(1)で取得できる
   const cardIdToContainerKey = useMemo(() => {
@@ -97,16 +149,6 @@ export function KanbanPage() {
     return m
   }, [cardContainers])
 
-  function findContainerKeyByCardId(cardId: string): string | undefined {
-    return cardIdToContainerKey.get(cardId)
-  }
-
-  function findContainerKeyByContainerId(
-    containerId: string
-  ): string | undefined {
-    return cardContainers[containerId] ? containerId : undefined
-  }
-
   const containerKeyTocardIds = useMemo(() => {
     const obj: Record<string, string[]> = {}
 
@@ -117,6 +159,17 @@ export function KanbanPage() {
     return obj
   }, [cardContainers])
 
+  // Drag中カード情報の取得
+  const activeCard = useMemo(() => {
+    if (!activeCardId) return null
+
+    const key = findContainerKeyByCardId(String(activeCardId))
+
+    if (!key) return null
+
+    return cardContainers[key]?.find((c) => c.id === activeCardId) ?? null
+  }, [activeCardId, cardContainers])
+
   // 直前の配置と、1フレーム中に更新したかを記録（過度なsetState防止）
   const lastPlacementRef = useRef<{
     id: UniqueIdentifier
@@ -126,7 +179,12 @@ export function KanbanPage() {
   const movedInFrameRef = useRef(false)
 
   return (
-    <DndContext onDragOver={handleDragOver} onDragEnd={handleDragEnd}>
+    <DndContext
+      onDragStart={handleDragStart}
+      onDragOver={handleDragOver}
+      onDragEnd={handleDragEnd}
+      onDragCancel={handleDragCancel}
+    >
       <div className="flex items-start gap-4 overflow-x-auto bg-slate-50 p-4">
         {Object.keys(cardContainers).map((key) => {
           const cards = cardContainers[key]
@@ -142,7 +200,11 @@ export function KanbanPage() {
                 </div>
                 <Droppable id={key}>
                   {cards.map((card) => (
-                    <Sortable key={card.id} {...card} />
+                    <Sortable
+                      key={card.id}
+                      {...card}
+                      activeCardId={activeCardId}
+                    />
                   ))}
                 </Droppable>
               </SortableContext>
@@ -150,50 +212,21 @@ export function KanbanPage() {
           )
         })}
       </div>
+
+      <DragOverlay /* dropAnimation など必要ならここで指定可 */>
+        {activeCard ? (
+          // useSortable を呼ばない「見た目専用」の Item を使う
+          <Item className="rounded-lg border border-slate-200 bg-white p-3 shadow-sm">
+            {activeCard.title}
+          </Item>
+        ) : null}
+      </DragOverlay>
     </DndContext>
   )
 
-  function handleDragEnd(event: DragEndEvent) {
-    const { active, over } = event
-    lastPlacementRef.current = null
-    if (!over) return
-
-    const overId = over.id
-    if (!overId || active.id === overId) return
-
-    // コンテナ間でのカードのソートは扱わない（hadleDragOver管轄)
-    const activeContainerKey = findContainerKeyByCardId(String(active.id)) // ドラッグ中Cardが所属するContainerのkey
-    const overContainerKey = findContainerKeyByCardId(String(over.id)) // ドロップ先Cardが所属するContainerのkey
-    // console.log("dragend: ", activeContainerKey, overContainerKey)
-
-    if (
-      !activeContainerKey ||
-      !overContainerKey ||
-      activeContainerKey !== overContainerKey
-    )
-      return
-
-    setCardContainers((prevContainers) => {
-      const targetCards = prevContainers[activeContainerKey] // 入れ替えが起こるコンテナのCard[]
-      const activeCard = targetCards.find((card) => card.id === active.id)
-      if (!activeCard) return prevContainers
-
-      const activeCardIndex = targetCards.findIndex(
-        (card) => card.id === active.id
-      )
-      const overCardIndex = targetCards.findIndex((card) => card.id === over.id)
-
-      const nextCards = arrayMove<Card>(
-        targetCards,
-        activeCardIndex,
-        overCardIndex
-      ) //ソート後のCard[]
-
-      return {
-        ...prevContainers,
-        [activeContainerKey]: nextCards,
-      }
-    })
+  function handleDragStart(event: DragStartEvent) {
+    const { active } = event
+    setActiveCardId(active.id)
   }
 
   function handleDragOver(event: DragOverEvent) {
@@ -297,5 +330,64 @@ export function KanbanPage() {
         [overContainerKey]: nextOverContainerCards,
       }
     })
+  }
+
+  function handleDragEnd(event: DragEndEvent) {
+    const { active, over } = event
+    lastPlacementRef.current = null
+    if (!over) {
+      setActiveCardId(null)
+      return
+    }
+
+    const overId = over.id
+    if (!overId || active.id === overId) {
+      setActiveCardId(null)
+      return
+    }
+
+    // コンテナ間でのカードのソートは扱わない（hadleDragOver管轄)
+    const activeContainerKey = findContainerKeyByCardId(String(active.id)) // ドラッグ中Cardが所属するContainerのkey
+    const overContainerKey = findContainerKeyByCardId(String(over.id)) // ドロップ先Cardが所属するContainerのkey
+    // console.log("dragend: ", activeContainerKey, overContainerKey)
+
+    if (
+      !activeContainerKey ||
+      !overContainerKey ||
+      activeContainerKey !== overContainerKey
+    ) {
+      setActiveCardId(null)
+      return
+    }
+
+    setCardContainers((prevContainers) => {
+      const targetCards = prevContainers[activeContainerKey] // 入れ替えが起こるコンテナのCard[]
+      const activeCard = targetCards.find((card) => card.id === active.id)
+      if (!activeCard) {
+        setActiveCardId(null)
+        return prevContainers
+      }
+      const activeCardIndex = targetCards.findIndex(
+        (card) => card.id === active.id
+      )
+      const overCardIndex = targetCards.findIndex((card) => card.id === over.id)
+
+      const nextCards = arrayMove<Card>(
+        targetCards,
+        activeCardIndex,
+        overCardIndex
+      ) //ソート後のCard[]
+
+      return {
+        ...prevContainers,
+        [activeContainerKey]: nextCards,
+      }
+    })
+
+    setActiveCardId(null)
+  }
+
+  function handleDragCancel() {
+    setActiveCardId(null)
   }
 }
