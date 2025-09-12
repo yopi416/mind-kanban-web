@@ -2,13 +2,15 @@
 // import { Sidebar } from '@/components/layout/Sidebar'
 // import MindMap from '../features/mindmap'
 // import { TestSomething } from './TestSomething'
-import { KanbanPage } from './KanbanPage'
+import { DebugPanel } from './DebugPanel'
+// import { KanbanPage } from './KanbanPage'
 
 function MindMapPage() {
   return (
     <>
+      <DebugPanel />
       {/* <TestSomething /> */}
-      <KanbanPage />
+      {/* <KanbanPage /> */}
 
       {/* <div className="flex h-screen"> */}
       {/* <Sidebar />
