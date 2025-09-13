@@ -1,8 +1,8 @@
-import { useStore } from './DebugStore'
-import type { Card, KanbanState } from './DebugStore'
+import { useWholeStore } from '@/state/store'
+import type { KanbanCard, WholeStoreState } from '@/types'
 import { useShallow } from 'zustand/shallow'
 
-const selector = (store: KanbanState) => {
+const selector = (store: WholeStoreState) => {
   return {
     kanbanColumns: store.kanbanColumns,
     addCard: store.addCard,
@@ -12,16 +12,16 @@ const selector = (store: KanbanState) => {
 }
 
 export function DebugPanel() {
-  const { kanbanColumns, addCard, moveCard, removeCard } = useStore(
+  const { kanbanColumns, addCard, moveCard, removeCard } = useWholeStore(
     useShallow(selector)
   )
 
-  const card1: Card = {
+  const card1: KanbanCard = {
     pjId: 'pj1',
     nodeId: '2',
   }
 
-  const card2: Card = {
+  const card2: KanbanCard = {
     pjId: 'pj1',
     nodeId: '3',
   }
