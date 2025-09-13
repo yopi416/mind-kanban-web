@@ -1,20 +1,15 @@
-import { Button } from '@/components/ui/button'
-import { memo } from 'react'
+import { Outlet, useParams } from 'react-router'
 
-// console.log("dummy")
+export const TestSomething2 = () => {
+  const params = useParams()
+  console.log(params)
+  const filePath = params['*']
 
-type Props = {
-  // setState: (value: React.SetStateAction<number>) => void
-  hello: () => void
-}
-
-export const TestSomething2 = memo(({ hello }: Props) => {
-  console.log('I am Something2')
-  // console.log('typeof setState:', typeof setState)
   return (
     <>
-      <div>TestSomething2</div>
-      <Button onClick={() => hello()}>Initialize number</Button>
+      <h2>This is TestSomething2!!</h2>
+      <p>file path = {filePath}</p>
+      <Outlet />
     </>
   )
-})
+}

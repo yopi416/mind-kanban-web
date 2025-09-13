@@ -112,7 +112,7 @@ function Droppable(props: droppableProps) {
   )
 }
 
-export function KanbanPage() {
+export function Kanban() {
   // key: 'backlog', 'todo', 'doing', 'done' それぞれに、Card[] が所属
   const [cardContainers, setCardContainers] =
     useState<CardContainer>(initialCards)
@@ -122,17 +122,6 @@ export function KanbanPage() {
   const [activeCardId, setActiveCardId] = useState<UniqueIdentifier | null>(
     null
   )
-
-  // Drag中カード情報の取得
-  const activeCard = useMemo(() => {
-    if (!activeCardId) return null
-
-    const key = findContainerKeyByCardId(String(activeCardId))
-
-    if (!key) return null
-
-    return cardContainers[key]?.find((c) => c.id === activeCardId) ?? null
-  }, [activeCardId, cardContainers])
 
   // 全Containers中のカードに対して、 card.id: containerKey(格納先コンテナ) のMapを作成
   // このmapにより、指定したcardの格納先ContainerKeyをO(1)で取得できる
@@ -170,6 +159,17 @@ export function KanbanPage() {
   ): string | undefined {
     return cardContainers[containerId] ? containerId : undefined
   }
+
+  // Drag中カード情報の取得
+  const activeCard = useMemo(() => {
+    if (!activeCardId) return null
+
+    const key = findContainerKeyByCardId(String(activeCardId))
+
+    if (!key) return null
+
+    return cardContainers[key]?.find((c) => c.id === activeCardId) ?? null
+  }, [activeCardId, cardContainers])
 
   // 直前の配置と、1フレーム中に更新したかを記録（過度なsetState防止）
   const lastPlacementRef = useRef<{

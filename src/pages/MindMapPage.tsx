@@ -2,8 +2,6 @@
 import { Sidebar } from '@/components/layout/Sidebar'
 import MindMap from '../features/mindmap'
 // import { TestSomething } from './TestSomething'
-// import { DebugPanel } from './DebugPanel'
-// import { KanbanPage } from './KanbanPage'
 
 function MindMapPage() {
   return (
