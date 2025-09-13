@@ -1,17 +1,18 @@
 import { Switch } from '@/components/ui/switch'
 import { Label } from '@/components/ui/label'
 
-import useMindMapStore from '../store'
+// import useMindMapStore from '../store'
 import { useShallow } from 'zustand/shallow'
-import { type MindMapStore } from '../../../types.ts'
+import { type WholeStoreState } from '../../../types.ts'
+import { useWholeStore } from '@/state/store.ts'
 
-const selector = (store: MindMapStore) => ({
+const selector = (store: WholeStoreState) => ({
   showDoneNodes: store.showDoneNodes,
   setShowDoneNodes: store.setShowDoneNodes,
 })
 
 export default function DoneVisibilitySwitch() {
-  const { showDoneNodes, setShowDoneNodes } = useMindMapStore(
+  const { showDoneNodes, setShowDoneNodes } = useWholeStore(
     useShallow(selector)
   )
 

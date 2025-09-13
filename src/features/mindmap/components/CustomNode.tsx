@@ -5,13 +5,14 @@ import { RiKanbanView2 } from 'react-icons/ri' //kanbanIcon
 // import { MdOutlineTextRotationAngleup } from 'react-icons/md' //checkIcon
 // import { MdOutlineCheckBoxOutlineBlank} from "react-icons/md"; //checkIcon
 import { CiCirclePlus } from 'react-icons/ci' //plusIcon
-import useMindMapStore from '../store'
+// import useMindMapStore from '../store'
 import { useShallow } from 'zustand/shallow'
 import clsx from 'clsx'
 import {
   type NodeData,
-  type MindMapStore,
+  // type MindMapStore,
   type EditSnapshot,
+  type WholeStoreState,
 } from '../../../types.ts'
 import { CommentPopover } from './CommentPopover.tsx'
 import { Checkbox } from '@/components/ui/checkbox'
@@ -19,10 +20,11 @@ import { Checkbox } from '@/components/ui/checkbox'
 import { MAX_NODE_LABEL_LENGTH } from '../constants.ts'
 import { getCurrentPj } from '../utils/projectUtils.ts'
 import { getNodeIdxById } from '../utils/nodeTreeUtils.ts'
+import { useWholeStore } from '@/state/store.ts'
 
 type HoverZone = 'left-top' | 'left-bottom' | 'right' | null
 
-const selector = (store: MindMapStore) => ({
+const selector = (store: WholeStoreState) => ({
   updateNodeLabel: store.updateNodeLabel,
   addHorizontalElement: store.addHorizontalElement,
   addVerticalElement: store.addVerticalElement,
@@ -48,14 +50,14 @@ function CustomNode({ id, data }: NodeProps<Node<NodeData>>) {
     setCommentPopupId,
     updateIsDone,
     pushPrevGraphToUndo,
-  } = useMindMapStore(useShallow(selector))
+  } = useWholeStore(useShallow(selector))
 
   /* 自ノードがfocusされている時に枠色を強調 */
   // div側で isFocusedがtrueであれば枠色を青色に
   const [isFocused, setIsFocused] = useState<boolean>(false) //自ノードがフォーカスされているかのフラグ
 
   useEffect(() => {
-    const unsub = useMindMapStore.subscribe(
+    const unsub = useWholeStore.subscribe(
       (state) => state.focusedNodeId,
       (newId) => {
         setIsFocused(newId === id)
@@ -85,7 +87,7 @@ function CustomNode({ id, data }: NodeProps<Node<NodeData>>) {
   const textAreaRef = useRef<HTMLTextAreaElement>(null) //textareaへのref
 
   useEffect(() => {
-    const unsub = useMindMapStore.subscribe(
+    const unsub = useWholeStore.subscribe(
       (state) => state.editingNodeId,
       (newId) => {
         if (newId === id) {
@@ -94,7 +96,7 @@ function CustomNode({ id, data }: NodeProps<Node<NodeData>>) {
 
           // Undo用: 編集開始直前の状態を保存
           const { projects, currentPjId, focusedNodeId } =
-            useMindMapStore.getState()
+            useWholeStore.getState()
           const { nodes, edges } = getCurrentPj(projects, currentPjId)
           const deepCopy = structuredClone({ nodes, edges, focusedNodeId })
           snapshotRef.current = { pjId: currentPjId, ...deepCopy }
@@ -143,7 +145,7 @@ function CustomNode({ id, data }: NodeProps<Node<NodeData>>) {
     //   return
     // }
 
-    const { projects } = useMindMapStore.getState()
+    const { projects } = useWholeStore.getState()
     const currentPjId = snapshotRef.current.pjId
     // const currentPjId = snapshotToUndo.pjId
 
@@ -220,7 +222,7 @@ function CustomNode({ id, data }: NodeProps<Node<NodeData>>) {
   const [isMovingSelf, setIsMovingSelf] = useState(false) //自ノードが移動されているかのフラグ
 
   useEffect(() => {
-    const unsub = useMindMapStore.subscribe(
+    const unsub = useWholeStore.subscribe(
       (state) => state.movingNodeId,
       (newId) => {
         movingNodeIdRef.current = newId
@@ -264,7 +266,7 @@ function CustomNode({ id, data }: NodeProps<Node<NodeData>>) {
   const [isPopupOpen, setIsPopupOpen] = useState<boolean>(false)
 
   useEffect(() => {
-    const unsub = useMindMapStore.subscribe(
+    const unsub = useWholeStore.subscribe(
       (state) => state.commentPopupId,
       (newId) => {
         setIsPopupOpen(newId === id)

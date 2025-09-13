@@ -1,8 +1,8 @@
 import { useMemo, useState } from 'react'
 import { useShallow } from 'zustand/shallow'
 
-import { type MindMapStore } from '@/types'
-import useMindMapStore from '../../features/mindmap/store'
+// import { type MindMapStore } from '@/types'
+// import useMindMapStore from '../../features/mindmap/store'
 import {
   FiFolder,
   FiMoreHorizontal,
@@ -35,8 +35,10 @@ import {
   AlertDialogCancel,
   AlertDialogAction,
 } from '@/components/ui/alert-dialog'
+import type { WholeStoreState } from '@/types'
+import { useWholeStore } from '@/state/store'
 
-const selector = (store: MindMapStore) => {
+const selector = (store: WholeStoreState) => {
   return {
     projects: store.projects,
     currentPjId: store.currentPjId,
@@ -49,7 +51,7 @@ const selector = (store: MindMapStore) => {
 
 export function Sidebar() {
   const { projects, currentPjId, setCurrentPjId, addPj, deletePj, renamePj } =
-    useMindMapStore(useShallow(selector))
+    useWholeStore(useShallow(selector))
 
   const pjList = useMemo(
     () => Object.values(projects).sort((a, b) => a.name.localeCompare(b.name)),
