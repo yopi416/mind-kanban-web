@@ -16,6 +16,7 @@ function MindMapPage() {
         <Sidebar />
         <div className="min-w-0 flex-1 overflow-hidden">
           <MindMap />
+          <div>test</div>
         </div>
         {/* <DoneVisibilitySwitch /> */}
       </div>
