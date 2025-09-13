@@ -1,3 +1,6 @@
+// 2025/09/13 storeをslice化する時のバックアップ
+// 本ファイルはmindmapSliceと/src/state/store.tsにマージされるため不要
+
 import {
   applyNodeChanges,
   applyEdgeChanges,

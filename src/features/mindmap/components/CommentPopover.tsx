@@ -1,7 +1,7 @@
 import { useState } from 'react'
 
-import { type NodeData, type MindMapStore } from '@/types'
-import useMindMapStore from '../store'
+import { type NodeData, type WholeStoreState } from '@/types'
+// import useMindMapStore from '../store'
 
 import {
   Popover,
@@ -17,6 +17,7 @@ import { format } from 'date-fns'
 import { FaRegCommentDots } from 'react-icons/fa'
 import { FiTrash2 } from 'react-icons/fi'
 import { useShallow } from 'zustand/shallow'
+import { useWholeStore } from '@/state/store'
 
 type CommentPopoverProps = {
   id: string
@@ -25,7 +26,7 @@ type CommentPopoverProps = {
   onOpenChange: (open: boolean) => void
 }
 
-const selector = (store: MindMapStore) => ({
+const selector = (store: WholeStoreState) => ({
   addComment: store.addComment,
   editComment: store.editComment,
   deleteComment: store.deleteComment,
@@ -40,7 +41,7 @@ export function CommentPopover({
   // console.log("re-lendaring:", id)
   // console.log(`${new Date().toLocaleString()} 再描画:`, id)
 
-  const { addComment, editComment, deleteComment } = useMindMapStore(
+  const { addComment, editComment, deleteComment } = useWholeStore(
     useShallow(selector)
   )
   const [draft, setDraft] = useState<string>('')

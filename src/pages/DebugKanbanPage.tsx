@@ -12,6 +12,36 @@ import type { ComponentPropsWithoutRef } from 'react'
 import { CSS } from '@dnd-kit/utilities'
 // import { initialCards, type Card, type CardContainer } from './initialCards'
 
+type Card = {
+  id: string
+  title: string
+}
+
+type CardContainer = Record<string, Card[]>
+
+const initialCards: CardContainer = {
+  backlog: [
+    { id: 'row1-1', title: 'row1-1' },
+    { id: 'row1-2', title: 'row1-2' },
+  ],
+  todo: [
+    { id: 'row2-1', title: 'row2-1' },
+    { id: 'row2-2', title: 'row2-2' },
+  ],
+  doing: [
+    { id: 'row3-1', title: 'row3-1' },
+    { id: 'row3-2', title: 'row3-2' },
+  ],
+  done: [
+    { id: 'row4-1', title: 'row4-1' },
+    { id: 'row4-2', title: 'row4-2' },
+    { id: 'row4-3', title: 'row4-3' },
+    { id: 'row4-4', title: 'row4-4' },
+    { id: 'row4-5', title: 'row4-5' },
+    { id: 'row4-6', title: 'row4-6' },
+  ],
+}
+
 // React19より、fowardRef不要になったようだが、念のためfowardRefを使用
 type ItemProps = ComponentPropsWithoutRef<'div'>
 
@@ -83,22 +113,26 @@ function Droppable(props: droppableProps) {
 }
 
 export function KanbanPage() {
+  // key: 'backlog', 'todo', 'doing', 'done' それぞれに、Card[] が所属
   const [cardContainers, setCardContainers] =
     useState<CardContainer>(initialCards)
 
+  // カードがドラッグ中(active)であれば、見た目を変えたり、DragOverLay(移動中のUI)対象とする
+  // この判定のために、ドラッグ中のカードIDをstate管理する
   const [activeCardId, setActiveCardId] = useState<UniqueIdentifier | null>(
     null
   )
 
-  function findContainerKeyByCardId(cardId: string): string | undefined {
-    return cardIdToContainerKey.get(cardId)
-  }
+  // Drag中カード情報の取得
+  const activeCard = useMemo(() => {
+    if (!activeCardId) return null
 
-  function findContainerKeyByContainerId(
-    containerId: string
-  ): string | undefined {
-    return cardContainers[containerId] ? containerId : undefined
-  }
+    const key = findContainerKeyByCardId(String(activeCardId))
+
+    if (!key) return null
+
+    return cardContainers[key]?.find((c) => c.id === activeCardId) ?? null
+  }, [activeCardId, cardContainers])
 
   // 全Containers中のカードに対して、 card.id: containerKey(格納先コンテナ) のMapを作成
   // このmapにより、指定したcardの格納先ContainerKeyをO(1)で取得できる
@@ -114,6 +148,7 @@ export function KanbanPage() {
     return m
   }, [cardContainers])
 
+  // ??
   const containerKeyTocardIds = useMemo(() => {
     const obj: Record<string, string[]> = {}
 
@@ -124,16 +159,17 @@ export function KanbanPage() {
     return obj
   }, [cardContainers])
 
-  // Drag中カード情報の取得
-  const activeCard = useMemo(() => {
-    if (!activeCardId) return null
+  // カードを移動する時に、同コンテナ内(onDragEnd)か、コンテナ間(onDragOver)かで処理が変わる
+  // その際に、カードがどのContainerに所属するかを把握するための関数
+  function findContainerKeyByCardId(cardId: string): string | undefined {
+    return cardIdToContainerKey.get(cardId)
+  }
 
-    const key = findContainerKeyByCardId(String(activeCardId))
-
-    if (!key) return null
-
-    return cardContainers[key]?.find((c) => c.id === activeCardId) ?? null
-  }, [activeCardId, cardContainers])
+  function findContainerKeyByContainerId(
+    containerId: string
+  ): string | undefined {
+    return cardContainers[containerId] ? containerId : undefined
+  }
 
   // 直前の配置と、1フレーム中に更新したかを記録（過度なsetState防止）
   const lastPlacementRef = useRef<{

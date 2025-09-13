@@ -1,27 +1,32 @@
 import { create } from 'zustand'
 import { subscribeWithSelector } from 'zustand/middleware'
 
-export type NodeComment = { id: string; content: string; createdAt: string }
-export type NodeData = {
-  label: string
-  parentId?: string | null
-  isDone: boolean
-  comments: NodeComment[]
-}
+// type NodeComment = { id: string; content: string; createdAt: string }
+// type NodeData = {
+//   label: string
+//   parentId?: string | null
+//   isDone: boolean
+//   comments: NodeComment[]
+// }
 
 //検索用,削除とか特定のpjidだけ表示とかできるようににpjIdを持っておく
-export type Card = { pjId: string; nodeId: string }
-export type Columns = 'backlog' | 'todo' | 'doing' | 'done'
+type Card = { pjId: string; nodeId: string }
+type KanbanColumnName = 'backlog' | 'todo' | 'doing' | 'done'
 // ex: backlog: [{id1, pj1}, [id2, pj2]], todo: [{id3, pj1}],,,,,
-export type KanbanColumns = Record<Columns, Card[]>
+type KanbanColumns = Record<KanbanColumnName, Card[]>
 
 // これはstore呼び出し側でuseState管理する
-export type CardEntity = Card & NodeData
+// type CardEntity = Card & NodeData
 
-export type KanbanState = {
+type KanbanState = {
   kanbanColumns: KanbanColumns
-  addCard: (card: Card, col: Columns) => void
-  moveCard: (card: Card, from: Columns, to: Columns, toIndex: number) => void
+  addCard: (card: Card, col: KanbanColumnName) => void
+  moveCard: (
+    card: Card,
+    from: KanbanColumnName,
+    to: KanbanColumnName,
+    toIndex: number
+  ) => void
   removeCard: (card: Card) => void
 }
 
@@ -61,8 +66,8 @@ export const useStore = create<KanbanState>()(
     },
     moveCard: (
       cardToMove: Card,
-      from: Columns,
-      to: Columns,
+      from: KanbanColumnName,
+      to: KanbanColumnName,
       toIndex: number
     ) => {
       set((prev) => {
@@ -106,7 +111,7 @@ export const useStore = create<KanbanState>()(
         }
 
         for (const [key, cards] of Object.entries(kanbanColumns) as [
-          Columns,
+          KanbanColumnName,
           Card[],
         ][]) {
           const nextCol = cards.filter(

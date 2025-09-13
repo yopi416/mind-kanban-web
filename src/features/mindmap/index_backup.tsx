@@ -1,3 +1,5 @@
+// 2025/09/13 storeにslice反映するが、バックアップとしてとっておく
+
 import {
   ReactFlow,
   Background,
@@ -8,7 +10,8 @@ import {
 
 import { useCallback, useEffect } from 'react'
 import { useShallow } from 'zustand/shallow'
-import type { WholeStoreState } from '@/types'
+import useMindMapStore from './store'
+import type { MindMapStore } from '@/types'
 import CustomNode from './components/CustomNode'
 import { getLayoutedNodes } from './utils/dagreLayout'
 
@@ -25,9 +28,8 @@ import '@xyflow/react/dist/style.css'
 import { ROOT_NODE_ID } from './constants'
 import { Button } from '@/components/ui/button'
 import { FaUndoAlt, FaRedoAlt } from 'react-icons/fa'
-import { useWholeStore } from '@/state/store'
 
-const selector = (store: WholeStoreState) => {
+const selector = (store: MindMapStore) => {
   const currentPj = store.projects[store.currentPjId]
 
   // historyByPj[store.currentPjId] は初回アクセスの場合存在しない = undefined
@@ -66,7 +68,7 @@ const nodeTypes = {
 }
 
 function createShortcuts(
-  state: ReturnType<typeof useWholeStore.getState>
+  state: ReturnType<typeof useMindMapStore.getState>
 ): Record<string, (e: KeyboardEvent) => void> {
   const {
     focusedNodeId,
@@ -181,7 +183,7 @@ function MindMap() {
     redo,
     canUndo,
     canRedo,
-  } = useWholeStore(useShallow(selector))
+  } = useMindMapStore(useShallow(selector))
 
   // ノードの付け替え（ドラッグ開始時）の処理
   const onConnectStart: OnConnectStart = useCallback(
@@ -198,7 +200,8 @@ function MindMap() {
         // const { nodes: currentNodes, movingNodeId: movingNodeId } =
         //   useMindMapStore.getState()
 
-        const { projects, currentPjId, movingNodeId } = useWholeStore.getState()
+        const { projects, currentPjId, movingNodeId } =
+          useMindMapStore.getState()
 
         const currentPj = projects[currentPjId]
 
@@ -306,7 +309,7 @@ function MindMap() {
         return
       }
 
-      const state = useWholeStore.getState()
+      const state = useMindMapStore.getState()
       // --- ① Undo/Redo をまずグローバルに処理 ---
       const key = e.key.length === 1 ? e.key.toLowerCase() : e.key
 
