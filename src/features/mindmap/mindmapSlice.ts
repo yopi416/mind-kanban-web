@@ -12,6 +12,7 @@ import type {
   History,
   HistoryByPj,
   WholeStoreState,
+  Projects,
 } from '../../types'
 import {
   collectDescendantIds,
@@ -26,7 +27,6 @@ import {
 } from './utils/nodeTreeUtils'
 
 // import { initialNodes, initialEdges } from './mockInitialElements'
-import { initialPjs } from './mockInitialElements'
 import { type NodeData } from '../../types'
 import { nanoid } from 'nanoid'
 import { createPj, createEdge, createNode } from './utils/elementFactory'
@@ -37,7 +37,7 @@ import {
   updatePjInPjs,
 } from './utils/projectUtils'
 
-import { ROOT_NODE_ID, MAX_STACK_SIZE } from './constants'
+import { ROOT_NODE_ID, MAX_STACK_SIZE, DEFAULT_NODE_TYPE } from './constants'
 import {
   cloneSnapshot,
   createEmptyHistory,
@@ -60,8 +60,36 @@ export const createMindMapSlice: StateCreator<
 > = (set, get) => ({
   // nodes: initialNodes,
   // edges: initialEdges,
-  projects: initialPjs,
-  currentPjId: 'pj2',
+
+  //開発時における認証管理用
+  isLogin: false,
+  setIsLogin: (isLogin: boolean) => {
+    set({ isLogin })
+  },
+
+  projects: {
+    pj1: {
+      id: 'pj1',
+      name: 'pj1',
+      nodes: [
+        {
+          id: ROOT_NODE_ID,
+          type: DEFAULT_NODE_TYPE,
+          data: { label: 'input', parentId: null, isDone: false, comments: [] },
+          position: { x: 0, y: 0 },
+        },
+      ],
+      edges: [],
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    },
+  },
+  setProjects: (newPjs: Projects) => {
+    set({
+      projects: newPjs,
+    })
+  },
+  currentPjId: 'pj1',
   setCurrentPjId: (newPjId: string) => {
     // 作業中のプロジェクトをクリックした際は処理しない
     if (newPjId === get().currentPjId) return

@@ -92,7 +92,7 @@ export const initialNodesPj2: Node<NodeData>[] = [
     position,
   },
   {
-    id: '2',
+    id: '2-2',
     type: DEFAULT_NODE_TYPE,
     data: {
       label: 'node 2',
@@ -103,20 +103,25 @@ export const initialNodesPj2: Node<NodeData>[] = [
     position,
   },
   {
-    id: '2a',
+    id: '2-2a',
     type: DEFAULT_NODE_TYPE,
-    data: { label: 'node 2a', parentId: '2', isDone: false, comments: [] },
+    data: {
+      label: 'node 2a test!!!',
+      parentId: '2-2',
+      isDone: false,
+      comments: [],
+    },
     position,
   },
   {
-    id: '2b',
+    id: '2-2b',
     type: DEFAULT_NODE_TYPE,
-    data: { label: 'node 2b', parentId: '2', isDone: false, comments: [] },
+    data: { label: 'node 2b', parentId: '2-2', isDone: false, comments: [] },
     position,
   },
 
   {
-    id: '3',
+    id: '2-3',
     type: DEFAULT_NODE_TYPE,
     data: {
       label: 'node 3',
@@ -128,16 +133,16 @@ export const initialNodesPj2: Node<NodeData>[] = [
   },
 
   {
-    id: '3a',
+    id: '2-3a',
     type: DEFAULT_NODE_TYPE,
-    data: { label: 'node 3a', parentId: '3', isDone: false, comments: [] },
+    data: { label: 'node 3a', parentId: '2-3', isDone: false, comments: [] },
     position,
   },
 
   {
-    id: '3b',
+    id: '2-3b',
     type: DEFAULT_NODE_TYPE,
-    data: { label: 'node 3b', parentId: '3a', isDone: false, comments: [] },
+    data: { label: 'node 3b', parentId: '2-3a', isDone: false, comments: [] },
     position,
   },
 ]
@@ -146,19 +151,24 @@ export const initialEdgesPj2: Edge[] = [
   {
     id: 'e_' + ROOT_NODE_ID + '_2',
     source: ROOT_NODE_ID,
-    target: '2',
+    target: '2-2',
     type: DEFAULT_EDGE_TYPE,
   },
   {
     id: 'e_' + ROOT_NODE_ID + '_3',
     source: ROOT_NODE_ID,
-    target: '3',
+    target: '2-3',
     type: DEFAULT_EDGE_TYPE,
   },
-  { id: 'e_2_2a', source: '2', target: '2a', type: DEFAULT_EDGE_TYPE },
-  { id: 'e_2_2b', source: '2', target: '2b', type: DEFAULT_EDGE_TYPE },
-  { id: 'e_3_3a', source: '3', target: '3a', type: DEFAULT_EDGE_TYPE },
-  { id: 'e_3a_3b', source: '3a', target: '3b', type: DEFAULT_EDGE_TYPE },
+  { id: 'e_2-2_2-2a', source: '2-2', target: '2-2a', type: DEFAULT_EDGE_TYPE },
+  { id: 'e_2-2_2-2b', source: '2-2', target: '2-2b', type: DEFAULT_EDGE_TYPE },
+  { id: 'e_2-3_2-3a', source: '2-3', target: '2-3a', type: DEFAULT_EDGE_TYPE },
+  {
+    id: 'e_2-3a_2-3b',
+    source: '2-3a',
+    target: '2-3b',
+    type: DEFAULT_EDGE_TYPE,
+  },
 ]
 
 export const initialPjs: Projects = {

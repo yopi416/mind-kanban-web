@@ -1,24 +1,270 @@
-import { useState } from 'react'
 import { DndContext } from '@dnd-kit/core'
+import type {
+  DragEndEvent,
+  DragOverEvent,
+  DragStartEvent,
+  UniqueIdentifier,
+} from '@dnd-kit/core'
+import { arrayMove } from '@dnd-kit/sortable'
+import { useRef } from 'react'
 
-import { Draggable } from './components/Draggable'
-import { Droppable } from './components/Droppable'
+import { Button } from '@/components/ui/button'
+import { Link } from 'react-router'
+import type {
+  KanbanCardRef,
+  KanbanColumnName,
+  KanbanColumns,
+  WholeStoreState,
+} from '@/types'
+import { KanbanColumn } from './components/KanbanColumn'
+import { useWholeStore } from '@/state/store'
+import { useShallow } from 'zustand/shallow'
+
+const selector = (store: WholeStoreState) => {
+  return {
+    setKanbanColumns: store.setKanbanColumns,
+  }
+}
 
 function Kanban() {
-  const [isDropped, setIsDropped] = useState(false)
-  const draggableMarkup = <Draggable>Drag me</Draggable>
+  const { setKanbanColumns } = useWholeStore(useShallow(selector))
+
+  const columnNames: KanbanColumnName[] = ['backlog', 'todo', 'doing', 'done']
+
+  // onDragxxで、store更新用
+
+  // 直前の配置と、1フレーム中に更新したかを記録（過度なsetState防止）
+  const lastPlacementRef = useRef<{
+    id: UniqueIdentifier
+    to: string
+    index: number
+  } | null>(null)
+
+  const movedInFrameRef = useRef(false)
 
   return (
-    <DndContext onDragEnd={handleDragEnd}>
-      {!isDropped ? draggableMarkup : null}
-      <Droppable>{isDropped ? draggableMarkup : 'Drop here'}</Droppable>
-    </DndContext>
+    <>
+      <Button>
+        <Link to="/app/mindmap">マインドマップへ移動!!</Link>
+      </Button>
+      <DndContext
+        onDragStart={handleDragStart}
+        onDragOver={handleDragOver}
+        onDragEnd={handleDragEnd}
+        onDragCancel={handleDragCancel}
+      >
+        <div className="flex items-start gap-4 overflow-x-auto bg-slate-50 p-4">
+          {columnNames.map((colName) => (
+            <KanbanColumn key={colName} columnName={colName} />
+          ))}
+        </div>
+      </DndContext>
+
+      <p>test</p>
+    </>
   )
 
-  function handleDragEnd(event) {
-    if (event.over && event.over.id === 'droppable') {
-      setIsDropped(true)
+  function handleDragStart(event: DragStartEvent) {
+    console.log(event)
+  }
+
+  function handleDragOver(event: DragOverEvent) {
+    const { active, over } = event
+
+    if (!over) {
+      // setActiveCardId(null)
+      return
     }
+
+    const activeId = String(active.id)
+    const overId = String(over.id)
+
+    if (!overId || activeId === overId) {
+      // setActiveCardId(null)
+      return
+    }
+
+    // active, overの所属するコンテナの取得
+    const prevColumns = useWholeStore.getState().kanbanColumns
+    const ColumnNames = Object.keys(prevColumns) as KanbanColumnName[]
+    const activeColumnName = ColumnNames.find((ColumnName) =>
+      prevColumns[ColumnName].some((card) => card.nodeId === activeId)
+    )
+    const overColumnName =
+      (ColumnNames.find((ColumnName) =>
+        prevColumns[ColumnName].some((card) => card.nodeId === overId)
+      ) ?? prevColumns[overId as KanbanColumnName])
+        ? (overId as KanbanColumnName)
+        : undefined //overノードがカードではなく、KanbanColumnの場合
+
+    if (
+      !activeColumnName ||
+      !overColumnName ||
+      activeColumnName === overColumnName
+    )
+      return
+
+    // 1フレームに1回だけ更新
+    if (movedInFrameRef.current) return
+
+    // 更新対象のKanbanColumnに所属するノードRef配列（更新前）の取得
+    const activeCardRefList = prevColumns[activeColumnName]
+    const overCardRefList = prevColumns[overColumnName]
+
+    const activeCardRef = activeCardRefList.find(
+      (card) => card.nodeId === activeId
+    )
+    if (!activeCardRef) return
+
+    // 注意: Drop先がkanbanColumnの場合(主にColumnが空の場合を想定) -1を返す
+    const overCardIndex = overCardRefList.findIndex(
+      (card) => card.nodeId === overId
+    )
+
+    const isBelowOverItm =
+      active.rect.current.translated &&
+      active.rect.current.translated.top > over.rect.top + over.rect.height
+
+    // Drop先がContainer本体の場合, :後の判定の値になる
+    // ⇒ 先頭(カード無し時の対応) OR 末尾（カード有時）
+    const insertIndexRaw =
+      overCardIndex >= 0
+        ? overCardIndex + (isBelowOverItm ? 1 : 0)
+        : overCardRefList.length
+
+    // 範囲外アクセスを防止
+    const insertIndex = Math.max(
+      0, // 下限は0
+      Math.min(overCardRefList.length, insertIndexRaw) // 上限は配列長
+    )
+
+    // 前回のソートと同じ状況ならば,更新しない
+    // コンテナ間移動時に、1度だけこれにより無駄なレンダリング防止できるぐらい
+    // よって、正直効果は薄いのだが、レンダリング回数削減のために残す
+    if (
+      lastPlacementRef.current &&
+      lastPlacementRef.current.id === activeId &&
+      lastPlacementRef.current.to === overColumnName &&
+      lastPlacementRef.current.index === insertIndex
+    )
+      return
+
+    // ↑と同じくなくてもよいが、念のため残す
+    if (
+      overCardRefList[insertIndex]?.nodeId === activeId ||
+      (overCardIndex < 0 &&
+        overCardRefList[overCardRefList.length - 1]?.nodeId === activeId)
+    )
+      return
+
+    const nextActiveCardRefList = activeCardRefList.filter(
+      (cardRef) => cardRef.nodeId !== activeId
+    )
+
+    const nextOverCardRefList = [
+      ...overCardRefList.slice(0, insertIndex),
+      activeCardRef,
+      ...overCardRefList.slice(insertIndex),
+    ]
+
+    // 次のカンバン
+    const nextColumns: KanbanColumns = {
+      ...prevColumns,
+      [activeColumnName]: nextActiveCardRefList,
+      [overColumnName]: nextOverCardRefList,
+    }
+
+    // 更新前に今回の更新情報を保持
+    // 本情報を基に次回のhandleDragOverにて、同じ処理を使用としているかを判断
+    // 同じ処理の場合 return
+    lastPlacementRef.current = {
+      id: activeId,
+      to: overColumnName,
+      index: insertIndex,
+    }
+
+    // setStateが行われるのを1フレームに1回とする
+    movedInFrameRef.current = true // 次フレームまでは、handleDragOverを即returnする
+    requestAnimationFrame(() => (movedInFrameRef.current = false))
+
+    console.log('onDragOver!!!')
+
+    setKanbanColumns(nextColumns)
+  }
+
+  function handleDragEnd(event: DragEndEvent) {
+    const { active, over } = event
+    lastPlacementRef.current = null
+
+    if (!over) {
+      // setActiveCardId(null)
+      return
+    }
+
+    const activeId = String(active.id)
+    const overId = String(over.id)
+
+    if (!overId || activeId === overId) {
+      // setActiveCardId(null)
+      return
+    }
+
+    // active, overの所属するコンテナの取得
+    const prevColumns = useWholeStore.getState().kanbanColumns
+    const ColumnNames = Object.keys(prevColumns) as KanbanColumnName[]
+    const activeColumnName = ColumnNames.find((ColumnName) =>
+      prevColumns[ColumnName].some((card) => card.nodeId === activeId)
+    )
+    const overColumnName = ColumnNames.find((ColumnName) =>
+      prevColumns[ColumnName].some((card) => card.nodeId === overId)
+    )
+
+    // let activeColumnName = undefined
+    // let overColumnName = undefined
+
+    // for (const [columnName, cards] of Object.entries(prevColumns) as [KanbanColumnName, KanbanCardRef[]][]) {
+    //   for (const card of cards) {
+    //     if(card.nodeId === activeId) activeColumnName = columnName
+    //     if(card.nodeId === overId) overColumnName = columnName
+    //   }
+    // }
+
+    // 同一コンテナ内の入れ替えのみ処理(コンテナ間入れ替えは onDragOver管轄)
+    if (
+      !activeColumnName ||
+      !overColumnName ||
+      activeColumnName !== overColumnName
+    ) {
+      // setActiveCardId(null)
+      return
+    }
+
+    // 更新対象のKanbanColumnに所属するノードRef配列（更新前）の取得
+    const prevCardRefList = prevColumns[activeColumnName]
+
+    // activ, overCardのIndexの取得
+    const from = prevCardRefList.findIndex(
+      (cardRef) => cardRef.nodeId === activeId
+    )
+    const to = prevCardRefList.findIndex((cardRef) => cardRef.nodeId === overId)
+    if (from < 0 || to < 0 || from === to) return
+
+    // 更新対象のKanbanColumnに所属するノードRef配列（更新後）の取得
+    const nextCardRefList = arrayMove<KanbanCardRef>(prevCardRefList, from, to) //カードの入れ替え
+
+    // 更新後のKanbanColumnsの作成
+    const nextColumns: KanbanColumns = {
+      ...prevColumns,
+      [activeColumnName]: nextCardRefList,
+    }
+
+    console.log('onDragEnd!!!')
+
+    setKanbanColumns(nextColumns)
+  }
+
+  function handleDragCancel(event: DragEndEvent) {
+    console.log(event)
   }
 }
 
