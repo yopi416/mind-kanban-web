@@ -53,8 +53,13 @@ export type EditSnapshot = {
 
 // mindmapのスライス
 export type MindMapSlice = {
+  /* 認証管理（開発用） */
+  isLogin: boolean
+  setIsLogin: (isLogin: boolean) => void
+
   /* 複数PJ管理 */
   projects: Projects
+  setProjects: (newPjs: Projects) => void
   currentPjId: string
   setCurrentPjId: (newPjId: string) => void
 
@@ -115,21 +120,32 @@ export type MindMapSlice = {
 }
 
 // Kanbanボードのスライス
-export type KanbanCard = { pjId: string; nodeId: string }
+
+/* Kanbanボードだが、nodedataは保持しない */
+export type KanbanCardRef = { pjId: string; nodeId: string }
 export type KanbanColumnName = 'backlog' | 'todo' | 'doing' | 'done'
-// ex: backlog: [{id1, pj1}, [id2, pj2]], todo: [{id3, pj1}],,,,,
-export type KanbanColumns = Record<KanbanColumnName, KanbanCard[]>
+
+// ex: { backlog: [{id1, pj1}, [id2, pj2]], todo: [{id3, pj1}],,,,, }
+export type KanbanColumns = Record<KanbanColumnName, KanbanCardRef[]>
+
+/* Kanbanボード実体（） */
+export type KanbanCardView = {
+  nodeId: string | undefined
+  nodeData: NodeData | undefined
+}
+export type KanbanColumnsView = Record<KanbanColumnName, KanbanCardView[]>
 
 export type KanbanSlice = {
   kanbanColumns: KanbanColumns
-  addCard: (card: KanbanCard, col: KanbanColumnName) => void
+  setKanbanColumns: (newKanbanRef: KanbanColumns) => void
+  addCard: (card: KanbanCardRef, col: KanbanColumnName) => void
   moveCard: (
-    card: KanbanCard,
+    card: KanbanCardRef,
     from: KanbanColumnName,
     to: KanbanColumnName,
     toIndex: number
   ) => void
-  removeCard: (card: KanbanCard) => void
+  removeCard: (card: KanbanCardRef) => void
 }
 
 export type WholeStoreState = MindMapSlice & KanbanSlice

@@ -12,6 +12,9 @@ import type { ComponentPropsWithoutRef } from 'react'
 import { CSS } from '@dnd-kit/utilities'
 // import { initialCards, type Card, type CardContainer } from './initialCards'
 
+import { Button } from '@/components/ui/button'
+import { Link } from 'react-router'
+
 type Card = {
   id: string
   title: string
@@ -60,6 +63,10 @@ type SortableProps = Card & { activeCardId: UniqueIdentifier | null }
 
 function Sortable(props: SortableProps) {
   const { id: myOwnCardId, title, activeCardId } = props
+
+  if (myOwnCardId === 'row4-1') {
+    console.log('render:', myOwnCardId)
+  }
 
   const { attributes, listeners, setNodeRef, transform, transition } =
     useSortable({ id: myOwnCardId })
@@ -112,7 +119,7 @@ function Droppable(props: droppableProps) {
   )
 }
 
-export function Kanban() {
+export function DebugKanban() {
   // key: 'backlog', 'todo', 'doing', 'done' それぞれに、Card[] が所属
   const [cardContainers, setCardContainers] =
     useState<CardContainer>(initialCards)
@@ -180,49 +187,54 @@ export function Kanban() {
   const movedInFrameRef = useRef(false)
 
   return (
-    <DndContext
-      onDragStart={handleDragStart}
-      onDragOver={handleDragOver}
-      onDragEnd={handleDragEnd}
-      onDragCancel={handleDragCancel}
-    >
-      <div className="flex items-start gap-4 overflow-x-auto bg-slate-50 p-4">
-        {Object.keys(cardContainers).map((key) => {
-          const cards = cardContainers[key]
+    <>
+      <Button>
+        <Link to="/app/mindmap">マインドマップへ移動!!</Link>
+      </Button>
+      <DndContext
+        onDragStart={handleDragStart}
+        onDragOver={handleDragOver}
+        onDragEnd={handleDragEnd}
+        onDragCancel={handleDragCancel}
+      >
+        <div className="flex items-start gap-4 overflow-x-auto bg-slate-50 p-4">
+          {Object.keys(cardContainers).map((key) => {
+            const cards = cardContainers[key]
 
-          return (
-            <div
-              key={key}
-              className="flex min-w-[280px] max-w-[320px] flex-col gap-3 rounded-xl border border-slate-200 bg-slate-100 p-3 shadow-sm"
-            >
-              <SortableContext id={key} items={containerKeyTocardIds[key]}>
-                <div className="rounded-md border border-slate-300 bg-slate-200 px-2 py-1.5 text-sm font-semibold text-slate-700">
-                  {key.toUpperCase()}
-                </div>
-                <Droppable id={key}>
-                  {cards.map((card) => (
-                    <Sortable
-                      key={card.id}
-                      {...card}
-                      activeCardId={activeCardId}
-                    />
-                  ))}
-                </Droppable>
-              </SortableContext>
-            </div>
-          )
-        })}
-      </div>
+            return (
+              <div
+                key={key}
+                className="flex min-w-[280px] max-w-[320px] flex-col gap-3 rounded-xl border border-slate-200 bg-slate-100 p-3 shadow-sm"
+              >
+                <SortableContext id={key} items={containerKeyTocardIds[key]}>
+                  <div className="rounded-md border border-slate-300 bg-slate-200 px-2 py-1.5 text-sm font-semibold text-slate-700">
+                    {key.toUpperCase()}
+                  </div>
+                  <Droppable id={key}>
+                    {cards.map((card) => (
+                      <Sortable
+                        key={card.id}
+                        {...card}
+                        activeCardId={activeCardId}
+                      />
+                    ))}
+                  </Droppable>
+                </SortableContext>
+              </div>
+            )
+          })}
+        </div>
 
-      <DragOverlay /* dropAnimation など必要ならここで指定可 */>
-        {activeCard ? (
-          // useSortable を呼ばない「見た目専用」の Item を使う
-          <Item className="rounded-lg border border-slate-200 bg-white p-3 shadow-sm">
-            {activeCard.title}
-          </Item>
-        ) : null}
-      </DragOverlay>
-    </DndContext>
+        <DragOverlay /* dropAnimation など必要ならここで指定可 */>
+          {activeCard ? (
+            // useSortable を呼ばない「見た目専用」の Item を使う
+            <Item className="rounded-lg border border-slate-200 bg-white p-3 shadow-sm">
+              {activeCard.title}
+            </Item>
+          ) : null}
+        </DragOverlay>
+      </DndContext>
+    </>
   )
 
   function handleDragStart(event: DragStartEvent) {

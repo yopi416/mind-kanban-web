@@ -2,28 +2,68 @@ import { useNavigate } from 'react-router'
 // import { useWholeStore } from '@/state/store'
 // import { dummyBootstrap } from '@/dummy/bootstrap'
 import { useState } from 'react'
+import type { Projects, WholeStoreState } from '@/types'
+import { useWholeStore } from '@/state/store'
+import { useShallow } from 'zustand/shallow'
+import { initialPjs } from '../mindmap/mockInitialElements'
+
+const selector = (store: WholeStoreState) => {
+  return {
+    isLogin: store.isLogin,
+    setIsLogin: store.setIsLogin,
+    setProjects: store.setProjects,
+    setCurrentPjId: store.setCurrentPjId,
+    setKanbanColumns: store.setKanbanColumns,
+  }
+}
 
 export function Login() {
   const navigate = useNavigate()
-  //   const setAuth = useWholeStore((s) => s.setAuth)
+  // const setAuth = useWholeStore((s) => s.setAuth)
   const setAuth = () => {
     console.log('dummy Auth')
   }
 
-  //   const initFromServer = useWholeStore((s) => s.initFromServer)
-  const initFromServer = () => {
-    console.log('dummy init')
-  }
-
+  const { isLogin, setIsLogin, setProjects, setCurrentPjId, setKanbanColumns } =
+    useWholeStore(useShallow(selector))
   const [loading, setLoading] = useState(false)
 
+  //   const initFromServer = useWholeStore((s) => s.initFromServer)
+  // DBからとってきたデータで、zustand storeのマインドマップとカンバンデータを初期化
+  const initStore = () => {
+    console.log('dummy init')
+
+    // マインドマップデータの初期化
+    const IntitialProjects: Projects = initialPjs
+    setProjects(IntitialProjects)
+
+    // CurrentPjIdの初期化
+    const InitialCurrentPjId: string = 'pj1'
+    setCurrentPjId(InitialCurrentPjId)
+
+    // カンバンデータの初期化
+    const InitialKanbanColumns: KanbanColumns = {
+      backlog: [
+        { pjId: 'pj1', nodeId: '2' },
+        { pjId: 'pj2', nodeId: '2-2a' },
+      ],
+      todo: [],
+      doing: [],
+      done: [],
+    }
+    setKanbanColumns(InitialKanbanColumns)
+
+    console.log('init has been done!!')
+  }
+
   const onDummyGoogleLogin = () => {
-    if (loading) return
+    if (loading || isLogin) return
     setLoading(true) //navigate後にLoginPageはアンマウントされるのでtrueは維持されない
 
     // ← 実装ができたらここを window.location.href = '/auth/login' に差し替え
     setAuth()
-    initFromServer()
+    initStore()
+    setIsLogin(true)
 
     // setAuth('dummy-token', dummyBootstrap.userId)
     // initFromServer({

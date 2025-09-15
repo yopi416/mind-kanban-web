@@ -1,6 +1,6 @@
 import type {
   KanbanSlice,
-  KanbanCard,
+  KanbanCardRef,
   KanbanColumnName,
   KanbanColumns,
   WholeStoreState,
@@ -20,7 +20,12 @@ export const createKanbanSlice: StateCreator<
     doing: [],
     done: [],
   },
-  addCard: (cardToAdd: KanbanCard, col = 'backlog') => {
+  setKanbanColumns: (newKanbanColumns: KanbanColumns) => {
+    set({
+      kanbanColumns: newKanbanColumns,
+    })
+  },
+  addCard: (cardToAdd: KanbanCardRef, col = 'backlog') => {
     set((prev) => {
       const kanbanColumns = prev.kanbanColumns
       for (const cards of Object.values(kanbanColumns)) {
@@ -46,7 +51,7 @@ export const createKanbanSlice: StateCreator<
     })
   },
   moveCard: (
-    cardToMove: KanbanCard,
+    cardToMove: KanbanCardRef,
     from: KanbanColumnName,
     to: KanbanColumnName,
     toIndex: number
@@ -81,7 +86,7 @@ export const createKanbanSlice: StateCreator<
       }
     })
   },
-  removeCard: (cardToRemove: KanbanCard) => {
+  removeCard: (cardToRemove: KanbanCardRef) => {
     set((prev) => {
       const kanbanColumns = prev.kanbanColumns
       const nextCols: KanbanColumns = {
@@ -93,7 +98,7 @@ export const createKanbanSlice: StateCreator<
 
       for (const [key, cards] of Object.entries(kanbanColumns) as [
         KanbanColumnName,
-        KanbanCard[],
+        KanbanCardRef[],
       ][]) {
         const nextCol = cards.filter(
           (card) => card.nodeId !== cardToRemove.nodeId
