@@ -27,7 +27,7 @@ function AuthGate() {
   }
 
   console.log('試験用のため常に認証成功')
-  return <Outlet /> // ← 常に通す
+  return <Outlet /> // ← 一旦は常に通す
 }
 
 function App() {

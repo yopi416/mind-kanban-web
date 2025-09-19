@@ -29,7 +29,7 @@ const selector = (store: WholeStoreState) => {
 function Kanban() {
   const { setKanbanColumns } = useWholeStore(useShallow(selector))
 
-  const columnNames: KanbanColumnName[] = ['backlog', 'todo', 'doing', 'done']
+  const colNames: KanbanColumnName[] = ['backlog', 'todo', 'doing', 'done']
 
   // onDragxxで、store更新用
 
@@ -54,8 +54,8 @@ function Kanban() {
         onDragCancel={handleDragCancel}
       >
         <div className="flex items-start gap-4 overflow-x-auto bg-slate-50 p-4">
-          {columnNames.map((colName) => (
-            <KanbanColumn key={colName} columnName={colName} />
+          {colNames.map((colName) => (
+            <KanbanColumn key={colName} colName={colName} />
           ))}
         </div>
       </DndContext>
@@ -69,6 +69,9 @@ function Kanban() {
   }
 
   function handleDragOver(event: DragOverEvent) {
+    // 1フレームに1回だけ更新
+    if (movedInFrameRef.current) return
+
     const { active, over } = event
 
     if (!over) {
@@ -84,32 +87,27 @@ function Kanban() {
       return
     }
 
-    // active, overの所属するコンテナの取得
-    const prevColumns = useWholeStore.getState().kanbanColumns
-    const ColumnNames = Object.keys(prevColumns) as KanbanColumnName[]
-    const activeColumnName = ColumnNames.find((ColumnName) =>
-      prevColumns[ColumnName].some((card) => card.nodeId === activeId)
+    // active, overが所属するカラムの取得
+    const prevCols = useWholeStore.getState().kanbanColumns
+    const ColNames = Object.keys(prevCols) as KanbanColumnName[]
+
+    const activeColName = ColNames.find((ColName) =>
+      prevCols[ColName].some((card) => card.nodeId === activeId)
     )
-    const overColumnName =
-      (ColumnNames.find((ColumnName) =>
-        prevColumns[ColumnName].some((card) => card.nodeId === overId)
-      ) ?? prevColumns[overId as KanbanColumnName])
-        ? (overId as KanbanColumnName)
-        : undefined //overノードがカードではなく、KanbanColumnの場合
-
-    if (
-      !activeColumnName ||
-      !overColumnName ||
-      activeColumnName === overColumnName
+    let overColName = ColNames.find((ColName) =>
+      prevCols[ColName].some((card) => card.nodeId === overId)
     )
-      return
 
-    // 1フレームに1回だけ更新
-    if (movedInFrameRef.current) return
+    // overがカードではなく、KanbanColumnsのkeyの場合、overId自体がColumnNameということになる
+    if (!overColName && prevCols[overId as KanbanColumnName]) {
+      overColName = overId as KanbanColumnName
+    }
 
-    // 更新対象のKanbanColumnに所属するノードRef配列（更新前）の取得
-    const activeCardRefList = prevColumns[activeColumnName]
-    const overCardRefList = prevColumns[overColumnName]
+    if (!activeColName || !overColName || activeColName === overColName) return
+
+    // 更新対象のKanbanColumnに所属するカードRef配列（更新前）の取得
+    const activeCardRefList = prevCols[activeColName]
+    const overCardRefList = prevCols[overColName]
 
     const activeCardRef = activeCardRefList.find(
       (card) => card.nodeId === activeId
@@ -144,7 +142,7 @@ function Kanban() {
     if (
       lastPlacementRef.current &&
       lastPlacementRef.current.id === activeId &&
-      lastPlacementRef.current.to === overColumnName &&
+      lastPlacementRef.current.to === overColName &&
       lastPlacementRef.current.index === insertIndex
     )
       return
@@ -157,10 +155,12 @@ function Kanban() {
     )
       return
 
+    // 元のカード群から、移動中のカード（active）を削除
     const nextActiveCardRefList = activeCardRefList.filter(
       (cardRef) => cardRef.nodeId !== activeId
     )
 
+    // 移動先カード（over）が所属するカード群に、移動中のカードを挿入
     const nextOverCardRefList = [
       ...overCardRefList.slice(0, insertIndex),
       activeCardRef,
@@ -168,10 +168,10 @@ function Kanban() {
     ]
 
     // 次のカンバン
-    const nextColumns: KanbanColumns = {
-      ...prevColumns,
-      [activeColumnName]: nextActiveCardRefList,
-      [overColumnName]: nextOverCardRefList,
+    const nextCols: KanbanColumns = {
+      ...prevCols,
+      [activeColName]: nextActiveCardRefList,
+      [overColName]: nextOverCardRefList,
     }
 
     // 更新前に今回の更新情報を保持
@@ -179,7 +179,7 @@ function Kanban() {
     // 同じ処理の場合 return
     lastPlacementRef.current = {
       id: activeId,
-      to: overColumnName,
+      to: overColName,
       index: insertIndex,
     }
 
@@ -189,7 +189,7 @@ function Kanban() {
 
     console.log('onDragOver!!!')
 
-    setKanbanColumns(nextColumns)
+    setKanbanColumns(nextCols)
   }
 
   function handleDragEnd(event: DragEndEvent) {
@@ -209,14 +209,16 @@ function Kanban() {
       return
     }
 
-    // active, overの所属するコンテナの取得
-    const prevColumns = useWholeStore.getState().kanbanColumns
-    const ColumnNames = Object.keys(prevColumns) as KanbanColumnName[]
-    const activeColumnName = ColumnNames.find((ColumnName) =>
-      prevColumns[ColumnName].some((card) => card.nodeId === activeId)
+    // active, overが所属しているカラムの取得
+    const prevCols = useWholeStore.getState().kanbanColumns
+    const ColNames = Object.keys(prevCols) as KanbanColumnName[]
+
+    // 各カラムの中に、active, overしているカードがあるかチェック
+    const activeColName = ColNames.find((ColName) =>
+      prevCols[ColName].some((card) => card.nodeId === activeId)
     )
-    const overColumnName = ColumnNames.find((ColumnName) =>
-      prevColumns[ColumnName].some((card) => card.nodeId === overId)
+    const overColName = ColNames.find((ColName) =>
+      prevCols[ColName].some((card) => card.nodeId === overId)
     )
 
     // let activeColumnName = undefined
@@ -230,23 +232,20 @@ function Kanban() {
     // }
 
     // 同一コンテナ内の入れ替えのみ処理(コンテナ間入れ替えは onDragOver管轄)
-    if (
-      !activeColumnName ||
-      !overColumnName ||
-      activeColumnName !== overColumnName
-    ) {
+    if (!activeColName || !overColName || activeColName !== overColName) {
       // setActiveCardId(null)
       return
     }
 
     // 更新対象のKanbanColumnに所属するノードRef配列（更新前）の取得
-    const prevCardRefList = prevColumns[activeColumnName]
+    const prevCardRefList = prevCols[activeColName]
 
-    // activ, overCardのIndexの取得
+    // activ, overCardのIndex(変更前)の取得
     const from = prevCardRefList.findIndex(
       (cardRef) => cardRef.nodeId === activeId
     )
     const to = prevCardRefList.findIndex((cardRef) => cardRef.nodeId === overId)
+
     if (from < 0 || to < 0 || from === to) return
 
     // 更新対象のKanbanColumnに所属するノードRef配列（更新後）の取得
@@ -254,8 +253,8 @@ function Kanban() {
 
     // 更新後のKanbanColumnsの作成
     const nextColumns: KanbanColumns = {
-      ...prevColumns,
-      [activeColumnName]: nextCardRefList,
+      ...prevCols,
+      [activeColName]: nextCardRefList,
     }
 
     console.log('onDragEnd!!!')
