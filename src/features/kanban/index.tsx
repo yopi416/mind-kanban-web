@@ -1,4 +1,4 @@
-import { DndContext } from '@dnd-kit/core'
+import { DndContext, DragOverlay } from '@dnd-kit/core'
 import type {
   DragEndEvent,
   DragOverEvent,
@@ -19,15 +19,19 @@ import type {
 import { KanbanColumn } from './components/KanbanColumn'
 import { useWholeStore } from '@/state/store'
 import { useShallow } from 'zustand/shallow'
+import { OverlayCard } from './components/OverlayCard'
 
 const selector = (store: WholeStoreState) => {
   return {
     setKanbanColumns: store.setKanbanColumns,
+    setActiveCardRef: store.setActiveCardRef,
   }
 }
 
 function Kanban() {
-  const { setKanbanColumns } = useWholeStore(useShallow(selector))
+  const { setKanbanColumns, setActiveCardRef } = useWholeStore(
+    useShallow(selector)
+  )
 
   const colNames: KanbanColumnName[] = ['backlog', 'todo', 'doing', 'done']
 
@@ -58,6 +62,9 @@ function Kanban() {
             <KanbanColumn key={colName} colName={colName} />
           ))}
         </div>
+        <DragOverlay>
+          <OverlayCard />
+        </DragOverlay>
       </DndContext>
 
       <p>test</p>
@@ -65,7 +72,23 @@ function Kanban() {
   )
 
   function handleDragStart(event: DragStartEvent) {
-    console.log(event)
+    // activeカードのidに一致するcarRefをKanbanColumnsから見つける
+    const { active } = event
+    const activeId = String(active.id)
+
+    const KanbanCols = useWholeStore.getState().kanbanColumns
+    let activeCardRef: KanbanCardRef | null = null
+
+    // 【改善余地あり】リストをストアに持っておけば、O(n) ⇒ O(1)に改善可能？
+    for (const cardRefList of Object.values(KanbanCols)) {
+      const hit = cardRefList.find((cardRef) => cardRef.nodeId === activeId)
+      if (hit) {
+        activeCardRef = hit
+        break
+      }
+    }
+
+    setActiveCardRef(activeCardRef)
   }
 
   function handleDragOver(event: DragOverEvent) {

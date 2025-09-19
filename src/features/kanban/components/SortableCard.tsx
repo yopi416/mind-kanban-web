@@ -14,10 +14,15 @@ type SortableCardProps = KanbanCardRef
 export function SortableCard(props: SortableCardProps) {
   const { pjId, nodeId } = props
 
-  //   console.log('SortableCard:', nodeId, ' render')
-
-  const { attributes, listeners, setNodeRef, transform, transition } =
-    useSortable({ id: nodeId })
+  /* カードの中身（node.data）を取得 */
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: nodeId })
 
   const selector = useMemo(
     () => (store: WholeStoreState) => {
@@ -53,18 +58,15 @@ export function SortableCard(props: SortableCardProps) {
     transition,
   }
 
-  //dragされている時true
-  //   const isActive = activeCardId === myOwnCardId
-
-  const cls =
+  let cls =
     'rounded-lg border bg-white p-3 shadow-sm transition-all duration-150'
 
-  //   if (isActive) {
-  //     // dragされている時薄くなる + 縮む
-  //     cls += ' opacity-40 scale-95 rotate-[0.2deg] border-slate-400'
-  //   } else {
-  //     cls += ' border-slate-200'
-  //   }
+  if (isDragging) {
+    // dragされている時薄くなる + 縮む
+    cls += ' opacity-40 scale-95 rotate-[0.2deg] border-slate-400'
+  } else {
+    cls += ' border-slate-200'
+  }
 
   return (
     <CardView

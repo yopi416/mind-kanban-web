@@ -25,6 +25,14 @@ export const createKanbanSlice: StateCreator<
       kanbanColumns: newKanbanColumns,
     })
   },
+
+  activeCardRef: null,
+  setActiveCardRef: (cardRef: KanbanCardRef | null) => {
+    set({
+      activeCardRef: cardRef,
+    })
+  },
+
   addCard: (cardToAdd: KanbanCardRef, col = 'backlog') => {
     set((prev) => {
       const kanbanColumns = prev.kanbanColumns

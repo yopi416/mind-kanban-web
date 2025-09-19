@@ -138,6 +138,11 @@ export type KanbanColumnsView = Record<KanbanColumnName, KanbanCardView[]>
 export type KanbanSlice = {
   kanbanColumns: KanbanColumns
   setKanbanColumns: (newKanbanRef: KanbanColumns) => void
+
+  // DragOverlay
+  activeCardRef: KanbanCardRef | null
+  setActiveCardRef: (cardRef: KanbanCardRef | null) => void
+
   addCard: (card: KanbanCardRef, col: KanbanColumnName) => void
   moveCard: (
     card: KanbanCardRef,
