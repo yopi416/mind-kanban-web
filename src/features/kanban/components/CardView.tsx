@@ -5,7 +5,7 @@ type CardViewProps = ComponentPropsWithoutRef<'div'>
 
 export const CardView = forwardRef<HTMLDivElement, CardViewProps>(
   ({ children, ...props }, ref) => {
-    console.log('CardView:', children, ' render')
+    // console.log('CardView:', children, ' render')
 
     return (
       <div ref={ref} {...props}>

@@ -2,7 +2,7 @@ import { useNavigate } from 'react-router'
 // import { useWholeStore } from '@/state/store'
 // import { dummyBootstrap } from '@/dummy/bootstrap'
 import { useState } from 'react'
-import type { Projects, WholeStoreState } from '@/types'
+import type { Projects, WholeStoreState, KanbanColumns } from '@/types'
 import { useWholeStore } from '@/state/store'
 import { useShallow } from 'zustand/shallow'
 import { initialPjs } from '../mindmap/mockInitialElements'
@@ -47,9 +47,9 @@ export function Login() {
         { pjId: 'pj1', nodeId: '2' },
         { pjId: 'pj2', nodeId: '2-2a' },
       ],
-      todo: [],
-      doing: [],
-      done: [],
+      todo: [{ pjId: 'pj2', nodeId: '2-2b' }],
+      doing: [{ pjId: 'pj2', nodeId: '2-3a' }],
+      done: [{ pjId: 'pj2', nodeId: '2-3b' }],
     }
     setKanbanColumns(InitialKanbanColumns)
 
