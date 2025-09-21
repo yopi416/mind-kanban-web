@@ -13,6 +13,8 @@ import {
   // type MindMapStore,
   type EditSnapshot,
   type WholeStoreState,
+  type KanbanCardRef,
+  type KanbanColumnName,
 } from '../../../types.ts'
 import { CommentPopover } from './CommentPopover.tsx'
 import { Checkbox } from '@/components/ui/checkbox'
@@ -33,6 +35,7 @@ const selector = (store: WholeStoreState) => ({
   setCommentPopupId: store.setCommentPopupId,
   updateIsDone: store.updateIsDone,
   pushPrevGraphToUndo: store.pushPrevGraphToUndo,
+  addCard: store.addCard,
 })
 
 function CustomNode({ id, data }: NodeProps<Node<NodeData>>) {
@@ -50,6 +53,7 @@ function CustomNode({ id, data }: NodeProps<Node<NodeData>>) {
     setCommentPopupId,
     updateIsDone,
     pushPrevGraphToUndo,
+    addCard,
   } = useWholeStore(useShallow(selector))
 
   /* 自ノードがfocusされている時に枠色を強調 */
@@ -277,6 +281,20 @@ function CustomNode({ id, data }: NodeProps<Node<NodeData>>) {
     return () => unsub()
   }, [id])
 
+  /* --- カンバンボード追加用 ---*/
+  const handleKanbanClick = () => {
+    const pjId = useWholeStore.getState().currentPjId
+
+    const cardRef: KanbanCardRef = {
+      pjId,
+      nodeId: id,
+    }
+
+    const columnToAddInto: KanbanColumnName = 'backlog'
+
+    addCard(cardRef, columnToAddInto)
+  }
+
   return (
     <div
       tabIndex={0}
@@ -347,7 +365,13 @@ function CustomNode({ id, data }: NodeProps<Node<NodeData>>) {
           />
 
           {/* カンバンボード連携 */}
-          <RiKanbanView2 size={20} />
+          <button
+            type="button"
+            onClick={() => handleKanbanClick()}
+            className="relative z-[2]"
+          >
+            <RiKanbanView2 size={20} />
+          </button>
 
           {/* コメント画面出力・コメント記載用コンポーネントの呼び出し */}
           <CommentPopover
