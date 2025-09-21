@@ -35,21 +35,21 @@ export const createKanbanSlice: StateCreator<
 
   addCard: (cardToAdd: KanbanCardRef, col = 'backlog') => {
     set((prev) => {
-      const kanbanColumns = prev.kanbanColumns
-      for (const cards of Object.values(kanbanColumns)) {
-        for (const card of cards) {
+      const kanbanCols = prev.kanbanColumns
+      for (const cardRefList of Object.values(kanbanCols)) {
+        for (const cardRef of cardRefList) {
           // if (card.nodeId === cardToAdd.nodeId) return {}
-          if (card.nodeId === cardToAdd.nodeId) {
+          if (cardRef.nodeId === cardToAdd.nodeId) {
             console.log('同じノード有り！！')
             return {}
           }
         }
       }
 
-      const prevCol = kanbanColumns[col]
+      const prevCol = kanbanCols[col]
       const nextCol = [cardToAdd, ...prevCol]
       const nextCols = {
-        ...kanbanColumns,
+        ...kanbanCols,
         [col]: nextCol,
       }
 
