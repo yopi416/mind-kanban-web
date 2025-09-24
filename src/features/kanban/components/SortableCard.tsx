@@ -7,6 +7,7 @@ import type { Node } from '@xyflow/react'
 import { CardView } from './CardView'
 import { useShallow } from 'zustand/shallow'
 import { useMemo } from 'react'
+import { FiTrash2 } from 'react-icons/fi'
 
 // type SortableProps = Card & { activeCardId: UniqueIdentifier | null }
 type SortableCardProps = KanbanCardRef
@@ -43,12 +44,13 @@ export function SortableCard(props: SortableCardProps) {
 
       return {
         cardData: targetNode ? targetNode.data : null,
+        removeCard: store.removeCard,
       }
     },
     [pjId, nodeId]
   )
 
-  const { cardData } = useWholeStore(useShallow(selector))
+  const { cardData, removeCard } = useWholeStore(useShallow(selector))
 
   // nullを返したとしても、呼び出し元のmapは無視して描画するため問題なし
   if (!cardData) return null
@@ -68,14 +70,32 @@ export function SortableCard(props: SortableCardProps) {
     cls += ' border-slate-200'
   }
 
+  const onDelete = (e: React.MouseEvent) => {
+    e.stopPropagation() // ドラッグ開始を防ぐ
+    e.preventDefault()
+    const cardToDelete: KanbanCardRef = { ...props }
+    removeCard(cardToDelete)
+  }
+
   return (
     <CardView
       ref={setNodeRef}
       style={style}
-      className={cls}
+      className={cls + ' relative'}
       {...attributes}
       {...listeners}
     >
+      {/* 右上の削除ボタン */}
+      <button
+        onClick={onDelete}
+        onPointerDown={(e) => e.stopPropagation()} // ドラッグイベントを親に伝搬させない
+        className="absolute right-1 top-1 rounded p-1 text-gray-400 hover:text-red-500"
+        aria-label="カードを削除"
+        title="カードを削除"
+      >
+        <FiTrash2 className="h-3 w-3" />
+      </button>
+
       {cardData.label}
     </CardView>
   )
