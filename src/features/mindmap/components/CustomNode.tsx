@@ -281,7 +281,25 @@ function CustomNode({ id, data }: NodeProps<Node<NodeData>>) {
     return () => unsub()
   }, [id])
 
-  /* --- カンバンボード追加用 ---*/
+  /* --- カンバンボード関連 ---*/
+
+  // カンバンボード追加時にカンバンアイコンを強調
+  const [isKanban, setIsKanban] = useState<boolean>(false) // 強調有無のフラグ
+
+  useEffect(() => {
+    const unsub = useWholeStore.subscribe(
+      (state) => [state.kanbanIndex, state.currentPjId] as const,
+      ([newIndex, currentPjId]) => {
+        // kanbanIndexに、自身のnodeIdがあればフラグをtrueに設定
+        setIsKanban(newIndex.get(currentPjId)?.has(id) ?? false)
+      },
+      { fireImmediately: true }
+    )
+
+    return () => unsub()
+  }, [id])
+
+  // カンバンボード追加ボタンのハンドラ
   const handleKanbanClick = () => {
     const pjId = useWholeStore.getState().currentPjId
 
@@ -370,7 +388,10 @@ function CustomNode({ id, data }: NodeProps<Node<NodeData>>) {
             onClick={() => handleKanbanClick()}
             className="relative z-[2]"
           >
-            <RiKanbanView2 size={20} />
+            <RiKanbanView2
+              size={20}
+              className={isKanban ? 'text-blue-500' : ''}
+            />
           </button>
 
           {/* コメント画面出力・コメント記載用コンポーネントの呼び出し */}

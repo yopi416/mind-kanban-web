@@ -128,6 +128,8 @@ export type KanbanColumnName = 'backlog' | 'todo' | 'doing' | 'done'
 // ex: { backlog: [{id1, pj1}, [id2, pj2]], todo: [{id3, pj1}],,,,, }
 export type KanbanColumns = Record<KanbanColumnName, KanbanCardRef[]>
 
+export type KanbanIndex = Map<string, Set<string>> // pjId -> nodeId Set
+
 /* Kanbanボード実体（） */
 export type KanbanCardView = {
   nodeId: string | undefined
@@ -136,6 +138,8 @@ export type KanbanCardView = {
 export type KanbanColumnsView = Record<KanbanColumnName, KanbanCardView[]>
 
 export type KanbanSlice = {
+  kanbanIndex: KanbanIndex
+  setKanbanIndex: (newKanbanIdx: KanbanIndex) => void
   kanbanColumns: KanbanColumns
   setKanbanColumns: (newKanbanRef: KanbanColumns) => void
 
