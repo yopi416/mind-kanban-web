@@ -19,7 +19,7 @@ import {
 import { CommentPopover } from './CommentPopover.tsx'
 import { Checkbox } from '@/components/ui/checkbox'
 // import { set } from 'lodash'
-import { MAX_NODE_LABEL_LENGTH } from '../constants.ts'
+import { MAX_NODE_LABEL_LENGTH, ROOT_NODE_ID } from '../constants.ts'
 import { getCurrentPj } from '../utils/projectUtils.ts'
 import { getNodeIdxById } from '../utils/nodeTreeUtils.ts'
 import { useWholeStore } from '@/state/store.ts'
@@ -300,7 +300,13 @@ function CustomNode({ id, data }: NodeProps<Node<NodeData>>) {
   }, [id])
 
   // カンバンボード追加ボタンのハンドラ
+
   const handleKanbanClick = () => {
+    if (id === ROOT_NODE_ID) {
+      alert('ルートノードはカンバンボードに追加できません')
+      return
+    }
+
     const pjId = useWholeStore.getState().currentPjId
 
     const cardRef: KanbanCardRef = {
