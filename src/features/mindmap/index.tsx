@@ -8,7 +8,7 @@ import {
 
 import { useCallback, useEffect } from 'react'
 import { useShallow } from 'zustand/shallow'
-import type { WholeStoreState } from '@/types'
+import type { WholeStoreState, KanbanColumnName, KanbanCardRef } from '@/types'
 import CustomNode from './components/CustomNode'
 import { getLayoutedNodes } from './utils/dagreLayout'
 
@@ -81,6 +81,7 @@ function createShortcuts(
     deleteNodes,
     updateIsDone,
     setEditingNodeId,
+    addCard,
   } = state
 
   if (!focusedNodeId) return {}
@@ -161,6 +162,25 @@ function createShortcuts(
     m: (e) => {
       e.preventDefault()
       setCommentPopupId(focusedNodeId)
+    },
+
+    /* --- カンバンボード追加用 */
+    k: (e) => {
+      e.preventDefault()
+
+      if (focusedNodeId === ROOT_NODE_ID) {
+        alert('ルートノードはカンバンボードに追加できません')
+        return
+      }
+
+      const cardRef: KanbanCardRef = {
+        pjId: currentPjId,
+        nodeId: focusedNodeId,
+      }
+
+      const columnToAddInto: KanbanColumnName = 'backlog'
+
+      addCard(cardRef, columnToAddInto)
     },
   }
 
