@@ -4,6 +4,7 @@ import type {
   KanbanColumnName,
   KanbanColumns,
   WholeStoreState,
+  KanbanIndex,
 } from '@/types'
 import type { StateCreator } from 'zustand'
 
@@ -14,6 +15,12 @@ export const createKanbanSlice: StateCreator<
   KanbanSlice
 > = (set /*, get*/) => ({
   // ---- Mindmap slice ----
+  kanbanIndex: new Map<string, Set<string>>(),
+  setKanbanIndex: (newKanbanIdx: KanbanIndex) => {
+    set({
+      kanbanIndex: newKanbanIdx,
+    })
+  },
   kanbanColumns: {
     backlog: [],
     todo: [],
@@ -33,19 +40,28 @@ export const createKanbanSlice: StateCreator<
     })
   },
 
+  // kanbanIndexとkanbanColumsに同時追加
   addCard: (cardToAdd: KanbanCardRef, col = 'backlog') => {
     set((prev) => {
       const kanbanCols = prev.kanbanColumns
-      for (const cardRefList of Object.values(kanbanCols)) {
-        for (const cardRef of cardRefList) {
-          // if (card.nodeId === cardToAdd.nodeId) return {}
-          if (cardRef.nodeId === cardToAdd.nodeId) {
-            console.log('同じノード有り！！')
-            return {}
-          }
+
+      // 全カンバン列の中に同じノードがあれば、処理を中止
+
+      for (const nodeIdSet of prev.kanbanIndex.values()) {
+        if (nodeIdSet.has(cardToAdd.nodeId)) {
+          console.log('同じカードが存在！！')
+          return {}
         }
       }
 
+      // 追加後のkanbanIndexの算出
+      const nextIndex = new Map(prev.kanbanIndex)
+      const oldSet = nextIndex.get(cardToAdd.pjId) ?? new Set()
+      const newSet = new Set(oldSet) // new map時にsetは浅いコピーになっているのでimmutablityを保つ必要有
+      newSet.add(cardToAdd.nodeId)
+      nextIndex.set(cardToAdd.pjId, newSet)
+
+      // 追加後のkanbanColumsの算出
       const prevCol = kanbanCols[col]
       const nextCol = [cardToAdd, ...prevCol]
       const nextCols = {
@@ -54,6 +70,7 @@ export const createKanbanSlice: StateCreator<
       }
 
       return {
+        kanbanIndex: nextIndex,
         kanbanColumns: nextCols,
       }
     })

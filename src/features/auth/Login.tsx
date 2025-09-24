@@ -2,7 +2,12 @@ import { useNavigate } from 'react-router'
 // import { useWholeStore } from '@/state/store'
 // import { dummyBootstrap } from '@/dummy/bootstrap'
 import { useState } from 'react'
-import type { Projects, WholeStoreState, KanbanColumns } from '@/types'
+import type {
+  Projects,
+  WholeStoreState,
+  KanbanColumns,
+  KanbanIndex,
+} from '@/types'
 import { useWholeStore } from '@/state/store'
 import { useShallow } from 'zustand/shallow'
 import { initialPjs } from '../mindmap/mockInitialElements'
@@ -13,6 +18,7 @@ const selector = (store: WholeStoreState) => {
     setIsLogin: store.setIsLogin,
     setProjects: store.setProjects,
     setCurrentPjId: store.setCurrentPjId,
+    setKanbanIndex: store.setKanbanIndex,
     setKanbanColumns: store.setKanbanColumns,
   }
 }
@@ -24,8 +30,14 @@ export function Login() {
     console.log('dummy Auth')
   }
 
-  const { isLogin, setIsLogin, setProjects, setCurrentPjId, setKanbanColumns } =
-    useWholeStore(useShallow(selector))
+  const {
+    isLogin,
+    setIsLogin,
+    setProjects,
+    setCurrentPjId,
+    setKanbanColumns,
+    setKanbanIndex,
+  } = useWholeStore(useShallow(selector))
   const [loading, setLoading] = useState(false)
 
   //   const initFromServer = useWholeStore((s) => s.initFromServer)
@@ -34,15 +46,22 @@ export function Login() {
     console.log('dummy init')
 
     // マインドマップデータの初期化
-    const IntitialProjects: Projects = initialPjs
-    setProjects(IntitialProjects)
+    const intitialProjects: Projects = initialPjs
+    setProjects(intitialProjects)
 
     // CurrentPjIdの初期化
-    const InitialCurrentPjId: string = 'pj1'
-    setCurrentPjId(InitialCurrentPjId)
+    const initialCurrentPjId: string = 'pj1'
+    setCurrentPjId(initialCurrentPjId)
+
+    // カンバンIndexの初期化
+    const initialKanbanIndex: KanbanIndex = new Map([
+      ['pj1', new Set(['2'])],
+      ['pj2', new Set(['2-2a', '2-2b', '2-3a', '2-3b'])],
+    ])
+    setKanbanIndex(initialKanbanIndex)
 
     // カンバンデータの初期化
-    const InitialKanbanColumns: KanbanColumns = {
+    const initialKanbanColumns: KanbanColumns = {
       backlog: [
         { pjId: 'pj1', nodeId: '2' },
         { pjId: 'pj2', nodeId: '2-2a' },
@@ -51,7 +70,7 @@ export function Login() {
       doing: [{ pjId: 'pj2', nodeId: '2-3a' }],
       done: [{ pjId: 'pj2', nodeId: '2-3b' }],
     }
-    setKanbanColumns(InitialKanbanColumns)
+    setKanbanColumns(initialKanbanColumns)
 
     console.log('init has been done!!')
   }
