@@ -111,6 +111,8 @@ export const createKanbanSlice: StateCreator<
       }
     })
   },
+
+  // kanbanIndexとkanbanColumsに同時削除
   removeCard: (cardToRemove: KanbanCardRef) => {
     set((prev) => {
       const kanbanColumns = prev.kanbanColumns
@@ -121,6 +123,14 @@ export const createKanbanSlice: StateCreator<
         done: [],
       }
 
+      // 削除後のkanbanIndexの算出
+      const nextIndex = new Map(prev.kanbanIndex)
+      const oldSet = nextIndex.get(cardToRemove.pjId) ?? new Set()
+      const newSet = new Set(oldSet) // new map時にsetは浅いコピーになっているのでimmutablityを保つ必要有
+      newSet.delete(cardToRemove.nodeId)
+      nextIndex.set(cardToRemove.pjId, newSet)
+
+      // 削除後のkanabnColumnsの算出(全カンバンから削除カードをFilter)
       for (const [key, cards] of Object.entries(kanbanColumns) as [
         KanbanColumnName,
         KanbanCardRef[],
@@ -132,6 +142,7 @@ export const createKanbanSlice: StateCreator<
       }
 
       return {
+        kanbanIndex: nextIndex,
         kanbanColumns: nextCols,
       }
     })
