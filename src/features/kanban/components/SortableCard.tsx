@@ -99,7 +99,6 @@ export function SortableCard(props: SortableCardProps) {
         aria-label="カードを削除"
         title="カードを削除"
       >
-        a
         <FiTrash2 className="h-3 w-3" />
       </button>
 
