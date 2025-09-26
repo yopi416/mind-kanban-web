@@ -60,12 +60,16 @@ export function SortableCard(props: SortableCardProps) {
     transition,
   }
 
+  // let cls =
+  //   'rounded-lg border bg-white p-3 shadow-sm transition-all duration-150'
+
   let cls =
-    'rounded-lg border bg-white p-3 shadow-sm transition-all duration-150'
+    'relative rounded-lg border border-slate-200 bg-white p-3 shadow-sm transition-all duration-150 hover:border-slate-300 hover:shadow-md'
 
   if (isDragging) {
     // dragされている時薄くなる + 縮む
-    cls += ' opacity-40 scale-95 rotate-[0.2deg] border-slate-400'
+    // cls += ' opacity-40 scale-95 rotate-[0.2deg] border-slate-400'
+    cls += ' opacity-40 scale-[0.98] rotate-[0.2deg] border-slate-300'
   } else {
     cls += ' border-slate-200'
   }
@@ -75,13 +79,15 @@ export function SortableCard(props: SortableCardProps) {
     e.preventDefault()
     const cardToDelete: KanbanCardRef = { ...props }
     removeCard(cardToDelete)
+    console.log(useWholeStore.getState().kanbanColumns)
   }
 
   return (
     <CardView
       ref={setNodeRef}
       style={style}
-      className={cls + ' relative'}
+      // className={cls + ' relative'}
+      className={cls}
       {...attributes}
       {...listeners}
     >
