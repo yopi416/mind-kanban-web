@@ -7,13 +7,15 @@ import type {
   KanbanIndex,
 } from '@/types'
 import type { StateCreator } from 'zustand'
+import { getCurrentPj } from '../mindmap/utils/projectUtils'
+import { collectDescendantIdSet } from '../mindmap/utils/nodeTreeUtils'
 
 export const createKanbanSlice: StateCreator<
   WholeStoreState,
   [['zustand/subscribeWithSelector', never]],
   [],
   KanbanSlice
-> = (set, get) => ({
+> = (set) => ({
   // ---- Mindmap slice ----
   kanbanIndex: new Map<string, Set<string>>(),
   setKanbanIndex: (newKanbanIdx: KanbanIndex) => {
@@ -44,30 +46,61 @@ export const createKanbanSlice: StateCreator<
   addCard: (cardToAdd: KanbanCardRef, col = 'backlog') => {
     set((prev) => {
       const kanbanCols = prev.kanbanColumns
+      const targetPjId = cardToAdd.pjId
 
-      // 全カンバン列の中に同じノードがあれば、処理を中止
+      // 全カンバン列の中に追加したいノードが既にあれば、処理を中止
+      const nodeIdSet = prev.kanbanIndex.get(targetPjId)
+      if (!nodeIdSet) return {}
 
-      for (const nodeIdSet of prev.kanbanIndex.values()) {
-        if (nodeIdSet.has(cardToAdd.nodeId)) {
-          console.log('同じカードが存在！！')
-          return {}
-        }
+      if (nodeIdSet.has(cardToAdd.nodeId)) {
+        console.log('同じカードが存在！！')
+        return {}
       }
 
-      // 追加後のkanbanIndexの算出
-      const nextIndex = new Map(prev.kanbanIndex)
-      const oldSet = nextIndex.get(cardToAdd.pjId) ?? new Set()
-      const newSet = new Set(oldSet) // new map時にsetは浅いコピーになっているのでimmutablityを保つ必要有
-      newSet.add(cardToAdd.nodeId)
-      nextIndex.set(cardToAdd.pjId, newSet)
+      /*-------------------------------
+        親・子ノードを持つノードの追加処理
+        - 子ノードを持つ(孫ノード以降も含む)
+         - 子ノードが既にkanbanColumnsにあるなら削除
+         - 子ノードをすべて kanban indexに追加
+        - 親ノードが既に追加済みの場合
+         - 追加対象の子ノードは kanban indexに追加済みなので処理が中断される
+          (この処理は上部で既に記載済み)
+       ------------------------------- */
 
-      // 追加後のkanbanColumsの算出
+      //  子ノードIDのsetを取得（親ノードIDも含まれる）
+      const targetPj = getCurrentPj(prev.projects, targetPjId)
+      const descendantNodeIdSet = collectDescendantIdSet(
+        [cardToAdd.nodeId],
+        targetPj.nodes
+      )
+
+      // 子ノードが既にkanbanColumnsにあるなら削除
       const prevCol = kanbanCols[col]
-      const nextCol = [cardToAdd, ...prevCol]
+      const nextCol = [cardToAdd, ...prevCol] // 親ノードはここで追加
       const nextCols = {
         ...kanbanCols,
         [col]: nextCol,
       }
+
+      for (const [colName, cardRefList] of Object.entries(nextCols) as [
+        KanbanColumnName,
+        KanbanCardRef[],
+      ][]) {
+        const nextCardRefList = cardRefList.filter((cardRef: KanbanCardRef) => {
+          return (
+            cardRef.nodeId === cardToAdd.nodeId ||
+            !descendantNodeIdSet.has(cardRef.nodeId)
+          )
+        })
+        console.log(nextCardRefList)
+        nextCols[colName] = nextCardRefList
+      }
+
+      // 子ノード含め kanban indexに追加
+      const nextIndex = new Map(prev.kanbanIndex)
+      const oldSet = nextIndex.get(cardToAdd.pjId) ?? new Set()
+      const newSet = new Set([...oldSet, ...descendantNodeIdSet]) // Immutablityを保ちつつ子ノードIDを追加
+      nextIndex.set(cardToAdd.pjId, newSet)
 
       return {
         kanbanIndex: nextIndex,
@@ -116,21 +149,26 @@ export const createKanbanSlice: StateCreator<
   removeCard: (cardToRemove: KanbanCardRef) => {
     set((prev) => {
       const kanbanColumns = prev.kanbanColumns
-      const nextCols: KanbanColumns = {
-        backlog: [],
-        todo: [],
-        doing: [],
-        done: [],
-      }
+      const targetPjId = cardToRemove.pjId
+
+      //  子ノードIDのsetを取得（親ノードIDも含まれる）
+      const targetPj = getCurrentPj(prev.projects, targetPjId)
+      const descendantNodeIdSet = collectDescendantIdSet(
+        [cardToRemove.nodeId],
+        targetPj.nodes
+      )
 
       // 削除後のkanbanIndexの算出
       const nextIndex = new Map(prev.kanbanIndex)
-      const oldSet = nextIndex.get(cardToRemove.pjId) ?? new Set()
-      const newSet = new Set(oldSet) // new map時にsetは浅いコピーになっているのでimmutablityを保つ必要有
-      newSet.delete(cardToRemove.nodeId)
-      nextIndex.set(cardToRemove.pjId, newSet)
+      const oldSet = nextIndex.get(targetPjId) ?? new Set()
+      const newSet = new Set(
+        [...oldSet].filter((nodeId) => !descendantNodeIdSet.has(nodeId))
+      ) // new map時にsetは浅いコピーになっているのでimmutablityを保つ必要有
+      nextIndex.set(targetPjId, newSet)
 
       // 削除後のkanabnColumnsの算出(全カンバンから削除カードをFilter)
+      const nextCols: KanbanColumns = { ...kanbanColumns }
+
       for (const [key, cards] of Object.entries(kanbanColumns) as [
         KanbanColumnName,
         KanbanCardRef[],
@@ -138,6 +176,9 @@ export const createKanbanSlice: StateCreator<
         const nextCol = cards.filter(
           (card) => card.nodeId !== cardToRemove.nodeId
         )
+
+        if (nextCol.length === cards.length) continue
+
         nextCols[key] = nextCol
       }
 
@@ -155,13 +196,13 @@ export const createKanbanSlice: StateCreator<
       // 1) kanbanIndex を「影響PJだけ」immutably 更新
       const nextIndex = new Map(prev.kanbanIndex)
 
-      // pjId ごとに 1 回だけ Set をコピーしてから削除する
+      // pjId ごとに 1 回だけ Set をコピーしてから子ノードもまとめて削除する
       // 例: work[pjId] = クローン済みSet
       const work = new Map<string, Set<string>>()
 
       for (const { pjId, nodeId } of doneCardRefList) {
         // workからpjidのSetを取得
-        // 参照を取得しているのでsetForPjの変更がworkのsetの変更に反映される
+        // 参照なのでsetForPjの変更がworkのsetに反映される
         let setForPj = work.get(pjId)
 
         // 初回のみnextIndexの該当pjIdのsetをworkにコピー
@@ -173,8 +214,17 @@ export const createKanbanSlice: StateCreator<
           work.set(pjId, setForPj)
         }
 
+        //  子ノードIDのsetを取得（親ノードIDも含まれる）
+        const targetPj = getCurrentPj(prev.projects, pjId)
+        const descendantNodeIdSet = collectDescendantIdSet(
+          [nodeId],
+          targetPj.nodes
+        )
+
         // この削除がwork側にも反映される
-        setForPj.delete(nodeId)
+        for (const idToDelete of descendantNodeIdSet) {
+          setForPj.delete(idToDelete)
+        }
       }
 
       // 変更があったpjのみnextIndexに反映
@@ -193,8 +243,5 @@ export const createKanbanSlice: StateCreator<
         kanbanColumns: nextCols,
       }
     })
-
-    console.log(get().kanbanColumns)
-    console.log(get().kanbanIndex)
   },
 })
