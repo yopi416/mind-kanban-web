@@ -13,6 +13,7 @@ import type {
   HistoryByPj,
   WholeStoreState,
   Projects,
+  KanbanCardRef,
 } from '../../types'
 import {
   collectDescendantIds,
@@ -24,6 +25,7 @@ import {
   getNodesExcludingSubtree,
   getSubtreeEdgesWithUpdatedParent,
   getEdgesExcludingSubtree,
+  collectDescendantIdSet,
 } from './utils/nodeTreeUtils'
 
 // import { initialNodes, initialEdges } from './mockInitialElements'
@@ -743,6 +745,64 @@ export const createMindMapSlice: StateCreator<
     const newHistoryMap = updateHistoryMap(historyByPj, currentPjId, newHistory)
 
     set({ projects: newPjs, historyByPj: newHistoryMap })
+  },
+  applyKanbanDoneToMindmap: (
+    cardRefList: KanbanCardRef[],
+    includeSubtasks: boolean
+  ) => {
+    set((prev) => {
+      // 各pjId毎のnodeIdのsetを作成
+      const pjIdNodeIdSetMap = new Map<string, Set<string>>()
+
+      for (const { pjId, nodeId } of cardRefList) {
+        if (!pjIdNodeIdSetMap.has(pjId)) {
+          pjIdNodeIdSetMap.set(pjId, new Set())
+        }
+
+        pjIdNodeIdSetMap.get(pjId)!.add(nodeId)
+      }
+
+      // includeSubtasksがtrue なら子タスクもsetに追加
+      for (const [pjId, baseSet] of pjIdNodeIdSetMap) {
+        if (includeSubtasks) {
+          const targetPj = getCurrentPj(prev.projects, pjId)
+          pjIdNodeIdSetMap.set(
+            pjId,
+            collectDescendantIdSet([...baseSet], targetPj.nodes)
+          )
+        }
+      }
+
+      // pjId毎にisDoneをtrueにする処理（updateIsDoneと同等）
+      const nextPjs: Projects = { ...prev.projects }
+
+      for (const [pjId, nodeIdSet] of pjIdNodeIdSetMap.entries()) {
+        const targetPj = getCurrentPj(nextPjs, pjId) // currentPjId以外にも使用可能なので流用
+        const nextNodes = targetPj.nodes.map((node) => {
+          // 対象ノード以外は変更せず
+          if (!nodeIdSet.has(node.id)) return node
+
+          return {
+            ...node,
+            data: {
+              ...node.data,
+              isDone: true,
+            },
+          }
+        })
+
+        const nextPj = {
+          ...targetPj,
+          nodes: nextNodes,
+        }
+
+        nextPjs[pjId] = nextPj
+      }
+
+      return {
+        projects: nextPjs,
+      }
+    })
   },
   addComment: (nodeId: string, content: string) => {
     const {

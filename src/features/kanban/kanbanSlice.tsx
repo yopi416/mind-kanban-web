@@ -13,7 +13,7 @@ export const createKanbanSlice: StateCreator<
   [['zustand/subscribeWithSelector', never]],
   [],
   KanbanSlice
-> = (set /*, get*/) => ({
+> = (set, get) => ({
   // ---- Mindmap slice ----
   kanbanIndex: new Map<string, Set<string>>(),
   setKanbanIndex: (newKanbanIdx: KanbanIndex) => {
@@ -146,5 +146,55 @@ export const createKanbanSlice: StateCreator<
         kanbanColumns: nextCols,
       }
     })
+  },
+  removeDoneCards: () => {
+    set((prev) => {
+      const doneCardRefList = prev.kanbanColumns.done
+      if (doneCardRefList.length === 0) return prev
+
+      // 1) kanbanIndex を「影響PJだけ」immutably 更新
+      const nextIndex = new Map(prev.kanbanIndex)
+
+      // pjId ごとに 1 回だけ Set をコピーしてから削除する
+      // 例: work[pjId] = クローン済みSet
+      const work = new Map<string, Set<string>>()
+
+      for (const { pjId, nodeId } of doneCardRefList) {
+        // workからpjidのSetを取得
+        // 参照を取得しているのでsetForPjの変更がworkのsetの変更に反映される
+        let setForPj = work.get(pjId)
+
+        // 初回のみnextIndexの該当pjIdのsetをworkにコピー
+        if (!setForPj) {
+          const oldSet = nextIndex.get(pjId) ?? new Set<string>()
+          // new map時にsetは浅いコピーになっているのでimmutablityを保つ
+          setForPj = new Set(oldSet)
+          // workに同期しておく
+          work.set(pjId, setForPj)
+        }
+
+        // この削除がwork側にも反映される
+        setForPj.delete(nodeId)
+      }
+
+      // 変更があったpjのみnextIndexに反映
+      for (const [pjId, clonedSet] of work.entries()) {
+        nextIndex.set(pjId, clonedSet)
+      }
+
+      // 2) kanbanColumns は done だけ空に差し替え（他列は参照共有で無駄な再レンダ回避）
+      const nextCols: KanbanColumns = {
+        ...prev.kanbanColumns,
+        done: [],
+      }
+
+      return {
+        kanbanIndex: nextIndex,
+        kanbanColumns: nextCols,
+      }
+    })
+
+    console.log(get().kanbanColumns)
+    console.log(get().kanbanIndex)
   },
 })
