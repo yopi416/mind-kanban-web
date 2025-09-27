@@ -101,6 +101,11 @@ export type MindMapSlice = {
 
   /* 1ノード内の情報管理 */
   updateIsDone: (nodeId: string, isDone: boolean) => void
+  applyKanbanDoneToMindmap: (
+    cardRefList: KanbanCardRef[],
+    includeSubtasks: boolean
+  ) => void
+
   addComment: (nodeId: string, content: string) => void
   editComment: (
     nodeId: string,
@@ -155,6 +160,7 @@ export type KanbanSlice = {
     toIndex: number
   ) => void
   removeCard: (card: KanbanCardRef) => void
+  removeDoneCards: () => void
 }
 
 export type WholeStoreState = MindMapSlice & KanbanSlice

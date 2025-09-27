@@ -132,7 +132,7 @@ export function getBelowNodeId(
 
 /* 複数ノードに関わる関数 */
 
-//対象ノードの子ノード・孫ノード・・・を探索してIDをreturn
+//対象ノードの子ノード・孫ノード・・・を探索してIDを配列でreturn
 export function collectDescendantIds(
   nodeIds: string[],
   nodes: Node<NodeData>[]
@@ -152,6 +152,29 @@ export function collectDescendantIds(
     })
   }
   return Array.from(collectedNodeIds)
+}
+
+//対象ノードの子ノード・孫ノード・・・を探索してIDをsetでreturn
+export function collectDescendantIdSet(
+  nodeIds: string[],
+  nodes: Node<NodeData>[]
+): Set<string> {
+  const collectedNodeIds = new Set<string>(nodeIds) //親ノードのID含め返すことに注意
+  const queue = [...nodeIds]
+
+  // 幅優先で探索
+  while (queue.length) {
+    const current = queue.shift()!
+    nodes.forEach((n) => {
+      const pid = n.data?.parentId
+      if (pid && pid === current && !collectedNodeIds.has(n.id)) {
+        collectedNodeIds.add(n.id)
+        queue.push(n.id)
+      }
+    })
+  }
+
+  return collectedNodeIds
 }
 
 // subtreeのノード群を取得し、ソースだけparentIdを変更
