@@ -5,6 +5,7 @@ import MindMapPage from './pages/MindMapPage'
 import { KanbanPage } from './pages/KanbanPage'
 // import { DebugKanban } from './pages/DebugKanbanPage'
 import { LoginPage } from './pages/LoginPage'
+import { AppLayout } from './pages/AppLayout'
 
 // import { TestSomething } from './pages/TestSomething'
 // import { TestSomething2 } from "./pages/TestSomething2"
@@ -39,7 +40,7 @@ function App() {
           {/* HomePageを追加予定 */}
           <Route path="login" element={<LoginPage />} />
           <Route element={<AuthGate />}>
-            <Route path="app">
+            <Route path="app" element={<AppLayout />}>
               <Route index element={<Navigate to="mindmap" replace />} />
               <Route path="mindmap" element={<MindMapPage />} />
               <Route path="kanban" element={<KanbanPage />} />
