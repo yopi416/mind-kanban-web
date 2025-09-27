@@ -27,8 +27,6 @@ import { Button } from '@/components/ui/button'
 import { FaUndoAlt, FaRedoAlt } from 'react-icons/fa'
 import { useWholeStore } from '@/state/store'
 
-import { Link } from 'react-router'
-
 const selector = (store: WholeStoreState) => {
   const currentPj = store.projects[store.currentPjId]
 
@@ -362,9 +360,6 @@ function MindMap() {
   return (
     // <div style={{ height: '100%' }}>
     <div className="h-full w-full">
-      <Button>
-        <Link to="/app/kanban">Kanbanへ移動!!</Link>
-      </Button>
       <Button onClick={undo} disabled={!canUndo} size="sm">
         <FaUndoAlt size={10} />
       </Button>

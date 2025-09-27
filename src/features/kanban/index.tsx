@@ -8,8 +8,6 @@ import type {
 import { arrayMove } from '@dnd-kit/sortable'
 import { useRef } from 'react'
 
-import { Button } from '@/components/ui/button'
-import { Link } from 'react-router'
 import type {
   KanbanCardRef,
   KanbanColumnName,
@@ -48,9 +46,6 @@ function Kanban() {
 
   return (
     <>
-      <Button>
-        <Link to="/app/mindmap">マインドマップへ移動!!</Link>
-      </Button>
       <DndContext
         onDragStart={handleDragStart}
         onDragOver={handleDragOver}
