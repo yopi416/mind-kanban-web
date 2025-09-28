@@ -99,11 +99,25 @@ function CustomNode({ id, data }: NodeProps<Node<NodeData>>) {
           setTimeout(() => textAreaRef.current?.focus(), 0) //ここでtextareaをFocus
 
           // Undo用: 編集開始直前の状態を保存
-          const { projects, currentPjId, focusedNodeId } =
-            useWholeStore.getState()
+          const {
+            projects,
+            currentPjId,
+            focusedNodeId,
+            kanbanIndex,
+            kanbanColumns,
+          } = useWholeStore.getState()
           const { nodes, edges } = getCurrentPj(projects, currentPjId)
-          const deepCopy = structuredClone({ nodes, edges, focusedNodeId })
-          snapshotRef.current = { pjId: currentPjId, ...deepCopy }
+          snapshotRef.current = {
+            pjId: currentPjId,
+            nodes,
+            edges,
+            focusedNodeId,
+            kanbanIndex,
+            kanbanColumns,
+          }
+
+          // const deepCopy = structuredClone({ nodes, edges, focusedNodeId })
+          // snapshotRef.current = { pjId: currentPjId, ...deepCopy }
           // setSnapshotToUndo({ pjId: currentPjId, nodes, edges })
         }
       },
@@ -144,34 +158,28 @@ function CustomNode({ id, data }: NodeProps<Node<NodeData>>) {
     // この場合は起こる可能性はなさそうだが、念のため
     if (!snapshotRef || !snapshotRef.current) return
 
-    // if(!snapshotToUndo){
-    //   setSnapshotToUndo(null)
-    //   return
-    // }
-
     const { projects } = useWholeStore.getState()
     const currentPjId = snapshotRef.current.pjId
-    // const currentPjId = snapshotToUndo.pjId
 
+    // 更新後と前のnodes、本ノードのidxを取得
     const { nodes } = getCurrentPj(projects, currentPjId)
     const currentNodeIdx = getNodeIdxById(id, nodes)
 
     const prevNodes: Node<NodeData>[] = snapshotRef.current.nodes
-    // const prevNodes: Node<NodeData>[] = snapshotToUndo.nodes
     const prevNodeIdx = getNodeIdxById(id, prevNodes)
 
+    // Idxが見つからない（本ノードのidがない）時はreturn
     if (currentNodeIdx === -1 || prevNodeIdx === -1) {
-      snapshotRef.current = null
-      // setSnapshotToUndo(null)
+      snapshotRef.current = null // snapshotを初期化
       return
     }
 
+    // 更新前後のラベル（ノード内のテキスト）を取得
     const currentLabel = nodes[currentNodeIdx].data.label
     const prevLabel = prevNodes[prevNodeIdx].data.label
 
     // テキストエリアが編集前後で同じ状態の場合はundoStackに保存しない
     if (currentLabel === prevLabel) {
-      // setSnapshotToUndo(null)
       snapshotRef.current = null
       return
     }
@@ -181,7 +189,10 @@ function CustomNode({ id, data }: NodeProps<Node<NodeData>>) {
       nodes: prevNodes,
       edges: snapshotRef.current.edges,
       focusedNodeId: snapshotRef.current.focusedNodeId,
+      kanbanIndex: snapshotRef.current.kanbanIndex,
+      kanbanColumns: snapshotRef.current.kanbanColumns,
     })
+
     snapshotRef.current = null
   }
 

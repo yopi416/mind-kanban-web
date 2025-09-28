@@ -34,7 +34,16 @@ export type StackItem = {
   nodes: Node<NodeData>[]
   edges: Edge[]
   focusedNodeId: string | null
+  kanbanIndex: KanbanIndex
+  kanbanColumns: KanbanColumns
 }
+
+// export type StackItem = {
+//   nodes: Node<NodeData>[]
+//   edges: Edge[]
+//   focusedNodeId: string | null
+// }
+
 export type History = {
   undoStack: StackItem[]
   redoStack: StackItem[]
@@ -49,6 +58,8 @@ export type EditSnapshot = {
   nodes: Node<NodeData>[]
   edges: Edge[]
   focusedNodeId: string | null
+  kanbanIndex: KanbanIndex
+  kanbanColumns: KanbanColumns
 }
 
 /* zustand store */
@@ -122,10 +133,11 @@ export type MindMapSlice = {
 
   /* undo・redo管理 */
   historyByPj: HistoryByPj
+  clearAllHistories: () => void
   pushPrevGraphToUndo: (currentPjId: string, prevGraph: StackItem) => void
 
-  undo: () => void
-  redo: () => void
+  // undo: () => void
+  // redo: () => void
 }
 
 // Kanbanボードのスライス
@@ -168,69 +180,69 @@ export type KanbanSlice = {
 }
 
 // Sliceに分割する前のゴミ
-export type MindMapStore = {
-  /* 複数PJ管理 */
-  projects: Projects
-  currentPjId: string
-  setCurrentPjId: (newPjId: string) => void
+// export type MindMapStore = {
+//   /* 複数PJ管理 */
+//   projects: Projects
+//   currentPjId: string
+//   setCurrentPjId: (newPjId: string) => void
 
-  addPj: () => void
-  renamePj: (pjId: string, newPjName: string) => void
-  deletePj: (pjId: string) => void
+//   addPj: () => void
+//   renamePj: (pjId: string, newPjName: string) => void
+//   deletePj: (pjId: string) => void
 
-  /* 選択中のPJのノード・エッジ管理 */
-  onNodesChange: OnNodesChange<Node<NodeData>>
-  onEdgesChange: OnEdgesChange
+//   /* 選択中のPJのノード・エッジ管理 */
+//   onNodesChange: OnNodesChange<Node<NodeData>>
+//   onEdgesChange: OnEdgesChange
 
-  deleteNodes: (nodeIdToDelete: string) => void // OrchestratorSliceに移行（未使用）
-  setNodes: (nodes: Node<NodeData>[]) => void
-  addHorizontalElement: (parentId: string) => void // OrchestratorSliceに移行（未使用）
-  addVerticalElement: (aboveNodeId: string, parentId: string) => void // OrchestratorSliceに移行（未使用）
+//   deleteNodes: (nodeIdToDelete: string) => void // OrchestratorSliceに移行（未使用）
+//   setNodes: (nodes: Node<NodeData>[]) => void
+//   addHorizontalElement: (parentId: string) => void // OrchestratorSliceに移行（未使用）
+//   addVerticalElement: (aboveNodeId: string, parentId: string) => void // OrchestratorSliceに移行（未使用）
 
-  moveNodeTobeChild: (movingNodeId: string, parentId: string) => void // OrchestratorSliceに移行（未使用）
+//   moveNodeTobeChild: (movingNodeId: string, parentId: string) => void // OrchestratorSliceに移行（未使用）
 
-  moveNodeAboveTarget: (
-    movingNodeId: string,
-    belowNodeId: string,
-    parentId: string
-  ) => void // OrchestratorSliceに移行（未使用）
+//   moveNodeAboveTarget: (
+//     movingNodeId: string,
+//     belowNodeId: string,
+//     parentId: string
+//   ) => void // OrchestratorSliceに移行（未使用）
 
-  moveNodeBelowTarget: (
-    movingNodeId: string,
-    aboveNodeId: string,
-    parentId: string
-  ) => void // OrchestratorSliceに移行（未使用）
+//   moveNodeBelowTarget: (
+//     movingNodeId: string,
+//     aboveNodeId: string,
+//     parentId: string
+//   ) => void // OrchestratorSliceに移行（未使用）
 
-  updateNodeLabel: (nodeId: string, label: string) => void
-  movingNodeId: string | null //移動するためにドラッグしているノード
+//   updateNodeLabel: (nodeId: string, label: string) => void
+//   movingNodeId: string | null //移動するためにドラッグしているノード
 
-  setMovingNodeId: (nodeId: string | null) => void
-  focusedNodeId: string | null //focus中のノード
-  setFocusedNodeId: (nodeId: string | null) => void
-  editingNodeId: string | null //textareaを編集中のノード
-  setEditingNodeId: (nodeId: string | null) => void
-  commentPopupId: string | null //コメントをpopupするノード
-  setCommentPopupId: (nodeId: string | null) => void
+//   setMovingNodeId: (nodeId: string | null) => void
+//   focusedNodeId: string | null //focus中のノード
+//   setFocusedNodeId: (nodeId: string | null) => void
+//   editingNodeId: string | null //textareaを編集中のノード
+//   setEditingNodeId: (nodeId: string | null) => void
+//   commentPopupId: string | null //コメントをpopupするノード
+//   setCommentPopupId: (nodeId: string | null) => void
 
-  /* 1ノード内の情報管理 */
-  updateIsDone: (nodeId: string, isDone: boolean) => void
-  addComment: (nodeId: string, content: string) => void
-  editComment: (
-    nodeId: string,
-    commentId: string,
-    updatedContent: string
-  ) => void
-  deleteComment: (nodeId: string, commentId: string) => void
-  showDoneNodes: boolean
-  setShowDoneNodes: (show: boolean) => void
+//   /* 1ノード内の情報管理 */
+//   updateIsDone: (nodeId: string, isDone: boolean) => void
+//   addComment: (nodeId: string, content: string) => void
+//   editComment: (
+//     nodeId: string,
+//     commentId: string,
+//     updatedContent: string
+//   ) => void
+//   deleteComment: (nodeId: string, commentId: string) => void
+//   showDoneNodes: boolean
+//   setShowDoneNodes: (show: boolean) => void
 
-  /* undo・redo管理 */
-  historyByPj: HistoryByPj
-  pushPrevGraphToUndo: (currentPjId: string, prevGraph: StackItem) => void
+//   /* undo・redo管理 */
+//   historyByPj: HistoryByPj
+//   pushPrevGraphToUndo: (currentPjId: string, prevGraph: StackItem) => void
 
-  undo: () => void
-  redo: () => void
-}
+//   undo: () => void
+//   redo: () => void
+// }
 
 /*-------------------------
 OrchestratorSlice
@@ -257,4 +269,7 @@ export type OrchestratorSlice = {
     aboveNodeId: string,
     parentId: string
   ) => void
+
+  undo: () => void
+  redo: () => void
 }

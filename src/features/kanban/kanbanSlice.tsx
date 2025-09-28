@@ -9,6 +9,8 @@ import type {
 import type { StateCreator } from 'zustand'
 import { getCurrentPj } from '../mindmap/utils/projectUtils'
 import { collectDescendantIdSet } from '../mindmap/utils/nodeTreeUtils'
+import { MAX_STACK_SIZE } from '../mindmap/constants'
+import { pushUndoSnapshotForProject } from '../mindmap/utils/historyUtils'
 
 export const createKanbanSlice: StateCreator<
   WholeStoreState,
@@ -102,9 +104,23 @@ export const createKanbanSlice: StateCreator<
       const newSet = new Set([...oldSet, ...descendantNodeIdSet]) // Immutablityを保ちつつ子ノードIDを追加
       nextIndex.set(cardToAdd.pjId, newSet)
 
+      // Undo用：更新前グラフをundoStackに格納
+      // 念のためdeep copyしたものを格納
+      const nextHistoryMap = pushUndoSnapshotForProject({
+        nodes: targetPj.nodes,
+        edges: targetPj.edges,
+        focusedNodeId: prev.focusedNodeId,
+        kanbanIndex: prev.kanbanIndex,
+        kanbanColumns: prev.kanbanColumns,
+        historyByPj: prev.historyByPj,
+        pjId: targetPjId,
+        maxStackSize: MAX_STACK_SIZE,
+      })
+
       return {
         kanbanIndex: nextIndex,
         kanbanColumns: nextCols,
+        historyByPj: nextHistoryMap,
       }
     })
   },
@@ -145,7 +161,7 @@ export const createKanbanSlice: StateCreator<
     })
   },
 
-  // kanbanIndexとkanbanColumsに同時削除
+  // kanbanIndexとkanbanColumsを同時削除
   removeCard: (cardToRemove: KanbanCardRef) => {
     set((prev) => {
       const kanbanColumns = prev.kanbanColumns
