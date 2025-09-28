@@ -43,7 +43,8 @@ const selector = (store: WholeStoreState) => {
     edges: currentPj?.edges ?? [],
     onNodesChange: store.onNodesChange,
     onEdgesChange: store.onEdgesChange,
-    deleteNodes: store.deleteNodes,
+    // deleteNodes: store.deleteNodes,
+    deleteNodesCascade: store.deleteNodesCascade,
     setNodes: store.setNodes,
     addHorizontalElement: store.addHorizontalElement,
     addVerticalElement: store.addVerticalElement,
@@ -76,7 +77,8 @@ function createShortcuts(
     addHorizontalElement,
     addVerticalElement,
     setCommentPopupId,
-    deleteNodes,
+    // deleteNodes,
+    deleteNodesCascade,
     updateIsDone,
     setEditingNodeId,
     addCard,
@@ -94,7 +96,7 @@ function createShortcuts(
     e.preventDefault()
 
     if (focusedNodeId === ROOT_NODE_ID) return // ルートは削除不可
-    deleteNodes(focusedNodeId)
+    deleteNodesCascade(focusedNodeId)
 
     /* フォーカスをひとつ上 or 親へ移す */
     const nextId =

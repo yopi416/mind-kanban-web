@@ -55,20 +55,28 @@ export function Login() {
 
     // カンバンIndexの初期化
     const initialKanbanIndex: KanbanIndex = new Map([
-      ['pj1', new Set(['2'])],
-      ['pj2', new Set(['2-2a', '2-2b', '2-3a', '2-3b'])],
+      // ['pj1', new Set(['2'])],
+      // ['pj2', new Set(['2-2a', '2-2b', '2-3a', '2-3b'])],
+      ['pj1', new Set([])],
+      ['pj2', new Set([])],
     ])
     setKanbanIndex(initialKanbanIndex)
 
     // カンバンデータの初期化
     const initialKanbanColumns: KanbanColumns = {
       backlog: [
-        { pjId: 'pj1', nodeId: '2' },
-        { pjId: 'pj2', nodeId: '2-2a' },
+        // { pjId: 'pj1', nodeId: '2' },
+        // { pjId: 'pj2', nodeId: '2-2a' },
       ],
-      todo: [{ pjId: 'pj2', nodeId: '2-2b' }],
-      doing: [{ pjId: 'pj2', nodeId: '2-3a' }],
-      done: [{ pjId: 'pj2', nodeId: '2-3b' }],
+      todo: [
+        // { pjId: 'pj2', nodeId: '2-2b' }
+      ],
+      doing: [
+        // { pjId: 'pj2', nodeId: '2-3a' }
+      ],
+      done: [
+        // { pjId: 'pj2', nodeId: '2-3b' }
+      ],
     }
     setKanbanColumns(initialKanbanColumns)
 
