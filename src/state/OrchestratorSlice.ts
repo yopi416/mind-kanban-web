@@ -2,12 +2,11 @@ import type { StateCreator } from 'zustand'
 import type {
   WholeStoreState,
   OrchestratorSlice,
-  StackItem,
   KanbanColumns,
   KanbanCardRef,
   KanbanIndex,
   NodeData,
-  HistoryByPj,
+  History,
 } from '@/types'
 import { MAX_STACK_SIZE, ROOT_NODE_ID } from '@/features/mindmap/constants'
 import {
@@ -29,9 +28,10 @@ import {
 } from '@/features/mindmap/utils/projectUtils'
 import {
   cloneSnapshot,
-  createEmptyHistory,
   getCurrentHistory,
-  pushUndoItem,
+  popFromStack,
+  pushToStack,
+  pushUndoSnapshotForProject,
   updateHistoryMap,
 } from '@/features/mindmap/utils/historyUtils'
 import {
@@ -79,10 +79,10 @@ export const createOrchestratorSlice: StateCreator<
             履歴の更新
         ------------------------------- */
       // 新規プロジェクトに対応する空historyを作成する
-      const newHistoryMap: HistoryByPj = {
-        ...prev.historyByPj,
-        [newPjId]: createEmptyHistory(),
-      }
+      //   const newHistoryMap: HistoryByPj = {
+      //     ...prev.historyByPj,
+      //     [newPjId]: createEmptyHistory(),
+      //   }
 
       /*-------------------------------
             まとめてセット
@@ -98,7 +98,7 @@ export const createOrchestratorSlice: StateCreator<
         movingNodeId: null,
         editingNodeId: null,
         commentPopupId: null,
-        historyByPj: newHistoryMap,
+        historyByPj: {}, // 履歴を空にする
         kanbanIndex: nextIndex,
       }
     })
@@ -109,7 +109,7 @@ export const createOrchestratorSlice: StateCreator<
 
       /*-------------------------------
                 mindmapの更新
-            ------------------------------- */
+        ------------------------------- */
 
       // プロジェクトが0個にならない仕様
       // currentPjIdがnullを取る場合の対応に時間がかかるためこの仕様とする
@@ -126,7 +126,7 @@ export const createOrchestratorSlice: StateCreator<
 
       /*-------------------------------
                 カンバンボードの更新
-            ------------------------------- */
+        ------------------------------- */
 
       // kanbanColumnsから該当pjIdのCardRefを削除
       const nextCols: KanbanColumns = removeCardByPjId(prev.kanbanColumns, pjId)
@@ -141,14 +141,14 @@ export const createOrchestratorSlice: StateCreator<
 
       /*-------------------------------
                 履歴の更新
-            ------------------------------- */
+        ------------------------------- */
       // undo/redo用 historyも削除しておく
       const newHistoryMap = { ...prev.historyByPj }
       delete newHistoryMap[pjId]
 
       /*-------------------------------
                 まとめてセット
-            ------------------------------- */
+        ------------------------------- */
       console.log(nextCols)
       console.log(nextIndex)
 
@@ -183,8 +183,8 @@ export const createOrchestratorSlice: StateCreator<
       )
 
       /*-------------------------------
-                 mindmapの更新
-                ------------------------------- */
+        mindmapの更新
+        ------------------------------- */
       const nextNodes = targetPj.nodes.filter(
         (node) => !descendantNodeIdSet.has(node.id)
       )
@@ -222,18 +222,31 @@ export const createOrchestratorSlice: StateCreator<
                 ------------------------------- */
       // 更新前グラフをundoStackに格納
       // 念のためdeep copyしたものを格納
-      const undoItem: StackItem = cloneSnapshot(
-        targetPj.nodes,
-        targetPj.edges,
-        focusedNodeId
-      )
-      const currentHistory = getCurrentHistory(historyByPj, targetPjId)
-      const nextHistory = pushUndoItem(currentHistory, undoItem, MAX_STACK_SIZE)
-      const nextHistoryMap = updateHistoryMap(
+      const nextHistoryMap = pushUndoSnapshotForProject({
+        nodes: targetPj.nodes,
+        edges: targetPj.edges,
+        focusedNodeId,
+        kanbanIndex: prev.kanbanIndex,
+        kanbanColumns: prev.kanbanColumns,
         historyByPj,
-        targetPjId,
-        nextHistory
-      )
+        pjId: targetPjId,
+        maxStackSize: MAX_STACK_SIZE,
+      })
+
+      //   const undoItem: StackItem = cloneSnapshot(
+      //     targetPj.nodes,
+      //     targetPj.edges,
+      //     focusedNodeId,
+      //     prev.kanbanIndex,
+      //     prev.kanbanColumns
+      //   )
+      //   const currentHistory = getCurrentHistory(historyByPj, targetPjId)
+      //   const nextHistory = pushUndoItem(currentHistory, undoItem, MAX_STACK_SIZE)
+      //   const nextHistoryMap = updateHistoryMap(
+      //     historyByPj,
+      //     targetPjId,
+      //     nextHistory
+      //   )
 
       /*-------------------------------
                  まとめてset
@@ -375,18 +388,16 @@ export const createOrchestratorSlice: StateCreator<
             ------------------------------- */
       // 更新前グラフをundoStackに格納
       // 念のためdeep copyしたものを格納
-      const undoItem: StackItem = cloneSnapshot(
-        targetPj.nodes,
-        targetPj.edges,
-        focusedNodeId
-      )
-      const currentHistory = getCurrentHistory(historyByPj, targetPjId)
-      const nextHistory = pushUndoItem(currentHistory, undoItem, MAX_STACK_SIZE)
-      const nextHistoryMap = updateHistoryMap(
+      const nextHistoryMap = pushUndoSnapshotForProject({
+        nodes: targetPj.nodes,
+        edges: targetPj.edges,
+        focusedNodeId,
+        kanbanIndex: prev.kanbanIndex,
+        kanbanColumns: prev.kanbanColumns,
         historyByPj,
-        targetPjId,
-        nextHistory
-      )
+        pjId: targetPjId,
+        maxStackSize: MAX_STACK_SIZE,
+      })
 
       /*-------------------------------
                 まとめてset
@@ -545,19 +556,16 @@ export const createOrchestratorSlice: StateCreator<
             ------------------------------- */
       // 更新前グラフをundoStackに格納
       // 念のためdeep copyしたものを格納
-      const undoItem: StackItem = cloneSnapshot(
-        targetPj.nodes,
-        targetPj.edges,
-        focusedNodeId
-      )
-      const currentHistory = getCurrentHistory(historyByPj, targetPjId)
-      const nextHistory = pushUndoItem(currentHistory, undoItem, MAX_STACK_SIZE)
-      const nextHistoryMap = updateHistoryMap(
+      const nextHistoryMap = pushUndoSnapshotForProject({
+        nodes: targetPj.nodes,
+        edges: targetPj.edges,
+        focusedNodeId,
+        kanbanIndex: prev.kanbanIndex,
+        kanbanColumns: prev.kanbanColumns,
         historyByPj,
-        targetPjId,
-        nextHistory
-      )
-
+        pjId: targetPjId,
+        maxStackSize: MAX_STACK_SIZE,
+      })
       /*-------------------------------
                 まとめてset
             ------------------------------- */
@@ -716,18 +724,16 @@ export const createOrchestratorSlice: StateCreator<
             ------------------------------- */
       // 更新前グラフをundoStackに格納
       // 念のためdeep copyしたものを格納
-      const undoItem: StackItem = cloneSnapshot(
-        targetPj.nodes,
-        targetPj.edges,
-        focusedNodeId
-      )
-      const currentHistory = getCurrentHistory(historyByPj, targetPjId)
-      const nextHistory = pushUndoItem(currentHistory, undoItem, MAX_STACK_SIZE)
-      const nextHistoryMap = updateHistoryMap(
+      const nextHistoryMap = pushUndoSnapshotForProject({
+        nodes: targetPj.nodes,
+        edges: targetPj.edges,
+        focusedNodeId,
+        kanbanIndex: prev.kanbanIndex,
+        kanbanColumns: prev.kanbanColumns,
         historyByPj,
-        targetPjId,
-        nextHistory
-      )
+        pjId: targetPjId,
+        maxStackSize: MAX_STACK_SIZE,
+      })
 
       /*-------------------------------
                 まとめてset
@@ -799,19 +805,16 @@ export const createOrchestratorSlice: StateCreator<
 
       // Undo用：更新前グラフをundoStackに格納
       // 念のためdeep copyしたものを格納
-      const undoItem: StackItem = cloneSnapshot(
-        currentNodes,
-        currentEdges,
-        focusedNodeId
-      )
-
-      const currentHistory = getCurrentHistory(historyByPj, targetPjId)
-      const nextHistory = pushUndoItem(currentHistory, undoItem, MAX_STACK_SIZE)
-      const nextHistoryMap = updateHistoryMap(
+      const nextHistoryMap = pushUndoSnapshotForProject({
+        nodes: targetPj.nodes,
+        edges: targetPj.edges,
+        focusedNodeId,
+        kanbanIndex: prev.kanbanIndex,
+        kanbanColumns: prev.kanbanColumns,
         historyByPj,
-        targetPjId,
-        nextHistory
-      )
+        pjId: targetPjId,
+        maxStackSize: MAX_STACK_SIZE,
+      })
 
       /*-------------------------------
                 まとめてset
@@ -892,19 +895,16 @@ export const createOrchestratorSlice: StateCreator<
 
       // Undo用：更新前グラフをundoStackに格納
       // 念のためdeep copyしたものを格納
-      const undoItem: StackItem = cloneSnapshot(
-        currentNodes,
-        currentEdges,
-        focusedNodeId
-      )
-
-      const currentHistory = getCurrentHistory(historyByPj, targetPjId)
-      const nextHistory = pushUndoItem(currentHistory, undoItem, MAX_STACK_SIZE)
-      const nextHistoryMap = updateHistoryMap(
+      const nextHistoryMap = pushUndoSnapshotForProject({
+        nodes: targetPj.nodes,
+        edges: targetPj.edges,
+        focusedNodeId,
+        kanbanIndex: prev.kanbanIndex,
+        kanbanColumns: prev.kanbanColumns,
         historyByPj,
-        targetPjId,
-        nextHistory
-      )
+        pjId: targetPjId,
+        maxStackSize: MAX_STACK_SIZE,
+      })
 
       /*-------------------------------
                 まとめてset
@@ -914,6 +914,126 @@ export const createOrchestratorSlice: StateCreator<
         historyByPj: nextHistoryMap,
         focusedNodeId: newNodeId, // 新規作成したノードにfocusあてる
         kanbanIndex: nextIndex,
+      }
+    })
+  },
+  undo: () => {
+    set((prev) => {
+      const {
+        projects: currentPjs,
+        focusedNodeId,
+        currentPjId,
+        historyByPj,
+      } = prev
+
+      const history = getCurrentHistory(historyByPj, currentPjId)
+      const currentPj = getCurrentPj(currentPjs, currentPjId)
+      const { undoStack, redoStack } = history
+
+      const [poppedItem, newUndoStack] = popFromStack(undoStack)
+      if (!poppedItem) return {} //pop対象0の場合undefinedを返すため
+
+      const redoItem = cloneSnapshot(
+        currentPj.nodes,
+        currentPj.edges,
+        focusedNodeId,
+        prev.kanbanIndex,
+        prev.kanbanColumns
+      )
+
+      const newRedoStack = pushToStack(redoStack, redoItem, MAX_STACK_SIZE)
+
+      // 次のプロジェクト(mindmap)の生成
+      const restoredPj = updateGraphInPj(
+        currentPj,
+        poppedItem.nodes,
+        poppedItem.edges
+      )
+      const restoredPjs = updatePjInPjs(currentPjs, currentPjId, restoredPj)
+
+      // 次のkanbanIndex, Columnsの生成
+      const newKanbanIndex: KanbanIndex = poppedItem.kanbanIndex
+      const newKanbanCols: KanbanColumns = poppedItem.kanbanColumns
+
+      // 次の履歴の生成
+      const newHistory: History = {
+        undoStack: newUndoStack,
+        redoStack: newRedoStack,
+      }
+      const newHistoryMap = updateHistoryMap(
+        historyByPj,
+        currentPjId,
+        newHistory
+      )
+
+      return {
+        projects: restoredPjs,
+        historyByPj: newHistoryMap,
+        focusedNodeId: poppedItem.focusedNodeId,
+        editingNodeId: null,
+        commentPopupId: null,
+        kanbanIndex: newKanbanIndex,
+        kanbanColumns: newKanbanCols,
+      }
+    })
+  },
+  redo: () => {
+    set((prev) => {
+      const {
+        projects: currentPjs,
+        focusedNodeId,
+        currentPjId,
+        historyByPj,
+      } = prev
+
+      const history = getCurrentHistory(historyByPj, currentPjId)
+      const currentPj = getCurrentPj(currentPjs, currentPjId)
+      const { undoStack, redoStack } = history
+
+      const [poppedItem, newRedoStack] = popFromStack(redoStack)
+      if (!poppedItem) return {} //pop対象0の場合undefinedを返すため
+
+      const undoItem = cloneSnapshot(
+        currentPj.nodes,
+        currentPj.edges,
+        focusedNodeId,
+        prev.kanbanIndex,
+        prev.kanbanColumns
+      )
+      const newUndoStack = pushToStack(undoStack, undoItem, MAX_STACK_SIZE)
+
+      // 次のプロジェクト(mindmap)の生成
+      const restoredPj = updateGraphInPj(
+        currentPj,
+        poppedItem.nodes,
+        poppedItem.edges
+      )
+      const restoredPjs = updatePjInPjs(currentPjs, currentPjId, restoredPj)
+
+      // 次のkanbanIndex, Columnsの生成
+      const newKanbanIndex: KanbanIndex = poppedItem.kanbanIndex
+      const newKanbanCols: KanbanColumns = poppedItem.kanbanColumns
+
+      // 次の履歴の生成
+      const newHistory: History = {
+        undoStack: newUndoStack,
+        redoStack: newRedoStack,
+      }
+
+      const newHistoryMap = updateHistoryMap(
+        historyByPj,
+        currentPjId,
+        newHistory
+      )
+
+      return {
+        projects: restoredPjs,
+        historyByPj: newHistoryMap,
+        focusedNodeId: poppedItem.focusedNodeId,
+        editingNodeId: null,
+        commentPopupId: null,
+        kanbanIndex: newKanbanIndex,
+        kanbanColumns: newKanbanCols,
       }
     })
   },

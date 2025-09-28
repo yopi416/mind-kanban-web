@@ -9,24 +9,12 @@ import {
 import type {
   NodeComment,
   StackItem,
-  History,
   HistoryByPj,
   WholeStoreState,
   Projects,
   KanbanCardRef,
 } from '../../types'
-import {
-  // collectDescendantIds,
-  // findBottomNodeIdx,
-  // findBottomEdgeIdx,
-  // getNodeIdxById,
-  // getEdgeIdxByTargetNodeId,
-  // getSubtreeWithUpdatedParent,
-  // getNodesExcludingSubtree,
-  // getSubtreeEdgesWithUpdatedParent,
-  // getEdgesExcludingSubtree,
-  collectDescendantIdSet,
-} from './utils/nodeTreeUtils'
+import { collectDescendantIdSet } from './utils/nodeTreeUtils'
 
 // import { initialNodes, initialEdges } from './mockInitialElements'
 import { type NodeData } from '../../types'
@@ -41,14 +29,8 @@ import {
 
 import { ROOT_NODE_ID, MAX_STACK_SIZE, DEFAULT_NODE_TYPE } from './constants'
 import {
-  cloneSnapshot,
   createEmptyHistory,
-  getCurrentHistory,
-  popFromStack,
-  pushToStack,
-  pushUndoItem,
-  updateHistoryMap,
-  // syncHistoryCounters,
+  pushUndoSnapshotForProject,
 } from './utils/historyUtils'
 
 import type { MindMapSlice } from '@/types'
@@ -102,6 +84,7 @@ export const createMindMapSlice: StateCreator<
       movingNodeId: null,
       editingNodeId: null,
       commentPopupId: null,
+      historyByPj: {}, // プロジェクト移動時は空にする
     })
   },
   addPj: () => {
@@ -715,6 +698,8 @@ export const createMindMapSlice: StateCreator<
       projects: currentPjs,
       currentPjId,
       focusedNodeId,
+      kanbanIndex,
+      kanbanColumns,
       historyByPj,
     } = get()
     const currentPj = getCurrentPj(currentPjs, currentPjId)
@@ -739,16 +724,28 @@ export const createMindMapSlice: StateCreator<
 
     // Undo用：更新前グラフをundoStackに格納
     // 念のためdeep copyしたものを格納
-    const undoItem: StackItem = cloneSnapshot(
-      currentNodes,
-      currentEdges,
-      focusedNodeId
-    )
-    const currentHistory = getCurrentHistory(historyByPj, currentPjId)
-    const newHistory = pushUndoItem(currentHistory, undoItem, MAX_STACK_SIZE)
-    const newHistoryMap = updateHistoryMap(historyByPj, currentPjId, newHistory)
 
-    set({ projects: newPjs, historyByPj: newHistoryMap })
+    const nextHistoryMap = pushUndoSnapshotForProject({
+      nodes: currentNodes,
+      edges: currentEdges,
+      focusedNodeId,
+      kanbanIndex,
+      kanbanColumns,
+      historyByPj,
+      pjId: currentPjId,
+      maxStackSize: MAX_STACK_SIZE,
+    })
+
+    // const undoItem: StackItem = cloneSnapshot(
+    //   currentNodes,
+    //   currentEdges,
+    //   focusedNodeId
+    // )
+    // const currentHistory = getCurrentHistory(historyByPj, currentPjId)
+    // const newHistory = pushUndoItem(currentHistory, undoItem, MAX_STACK_SIZE)
+    // const newHistoryMap = updateHistoryMap(historyByPj, currentPjId, newHistory)
+
+    set({ projects: newPjs, historyByPj: nextHistoryMap })
   },
   applyKanbanDoneToMindmap: (
     cardRefList: KanbanCardRef[],
@@ -813,6 +810,8 @@ export const createMindMapSlice: StateCreator<
       projects: currentPjs,
       currentPjId,
       focusedNodeId,
+      kanbanIndex,
+      kanbanColumns,
       historyByPj,
     } = get()
     const currentPj = getCurrentPj(currentPjs, currentPjId)
@@ -843,22 +842,35 @@ export const createMindMapSlice: StateCreator<
 
     // Undo用：更新前グラフをundoStackに格納
     // 念のためdeep copyしたものを格納
-    const undoItem: StackItem = cloneSnapshot(
-      currentNodes,
-      currentEdges,
-      focusedNodeId
-    )
-    const currentHistory = getCurrentHistory(historyByPj, currentPjId)
-    const newHistory = pushUndoItem(currentHistory, undoItem, MAX_STACK_SIZE)
-    const newHistoryMap = updateHistoryMap(historyByPj, currentPjId, newHistory)
+    const nextHistoryMap = pushUndoSnapshotForProject({
+      nodes: currentNodes,
+      edges: currentEdges,
+      focusedNodeId,
+      kanbanIndex,
+      kanbanColumns,
+      historyByPj,
+      pjId: currentPjId,
+      maxStackSize: MAX_STACK_SIZE,
+    })
 
-    set({ projects: newPjs, historyByPj: newHistoryMap })
+    // const undoItem: StackItem = cloneSnapshot(
+    //   currentNodes,
+    //   currentEdges,
+    //   focusedNodeId
+    // )
+    // const currentHistory = getCurrentHistory(historyByPj, currentPjId)
+    // const newHistory = pushUndoItem(currentHistory, undoItem, MAX_STACK_SIZE)
+    // const newHistoryMap = updateHistoryMap(historyByPj, currentPjId, newHistory)
+
+    set({ projects: newPjs, historyByPj: nextHistoryMap })
   },
   editComment: (nodeId: string, commentId: string, updatedContent: string) => {
     const {
       projects: currentPjs,
       currentPjId,
       focusedNodeId,
+      kanbanIndex,
+      kanbanColumns,
       historyByPj,
     } = get()
     const currentPj = getCurrentPj(currentPjs, currentPjId)
@@ -890,16 +902,27 @@ export const createMindMapSlice: StateCreator<
 
     // Undo用：更新前グラフをundoStackに格納
     // 念のためdeep copyしたものを格納
-    const undoItem: StackItem = cloneSnapshot(
-      currentNodes,
-      currentEdges,
-      focusedNodeId
-    )
-    const currentHistory = getCurrentHistory(historyByPj, currentPjId)
-    const newHistory = pushUndoItem(currentHistory, undoItem, MAX_STACK_SIZE)
-    const newHistoryMap = updateHistoryMap(historyByPj, currentPjId, newHistory)
+    const nextHistoryMap = pushUndoSnapshotForProject({
+      nodes: currentNodes,
+      edges: currentEdges,
+      focusedNodeId,
+      kanbanIndex,
+      kanbanColumns,
+      historyByPj,
+      pjId: currentPjId,
+      maxStackSize: MAX_STACK_SIZE,
+    })
 
-    set({ projects: newPjs, historyByPj: newHistoryMap })
+    // const undoItem: StackItem = cloneSnapshot(
+    //   currentNodes,
+    //   currentEdges,
+    //   focusedNodeId
+    // )
+    // const currentHistory = getCurrentHistory(historyByPj, currentPjId)
+    // const newHistory = pushUndoItem(currentHistory, undoItem, MAX_STACK_SIZE)
+    // const newHistoryMap = updateHistoryMap(historyByPj, currentPjId, newHistory)
+
+    set({ projects: newPjs, historyByPj: nextHistoryMap })
   },
   deleteComment: (nodeId: string, commentId: string) => {
     const {
@@ -907,6 +930,8 @@ export const createMindMapSlice: StateCreator<
       currentPjId,
       focusedNodeId,
       historyByPj,
+      kanbanIndex,
+      kanbanColumns,
     } = get()
     const currentPj = getCurrentPj(currentPjs, currentPjId)
     const { nodes: currentNodes, edges: currentEdges } = currentPj
@@ -932,16 +957,27 @@ export const createMindMapSlice: StateCreator<
 
     // Undo用：更新前グラフをundoStackに格納
     // 念のためdeep copyしたものを格納
-    const undoItem: StackItem = cloneSnapshot(
-      currentNodes,
-      currentEdges,
-      focusedNodeId
-    )
-    const currentHistory = getCurrentHistory(historyByPj, currentPjId)
-    const newHistory = pushUndoItem(currentHistory, undoItem, MAX_STACK_SIZE)
-    const newHistoryMap = updateHistoryMap(historyByPj, currentPjId, newHistory)
+    const nextHistoryMap = pushUndoSnapshotForProject({
+      nodes: currentNodes,
+      edges: currentEdges,
+      focusedNodeId,
+      kanbanIndex,
+      kanbanColumns,
+      historyByPj,
+      pjId: currentPjId,
+      maxStackSize: MAX_STACK_SIZE,
+    })
 
-    set({ projects: newPjs, historyByPj: newHistoryMap })
+    // const undoItem: StackItem = cloneSnapshot(
+    //   currentNodes,
+    //   currentEdges,
+    //   focusedNodeId
+    // )
+    // const currentHistory = getCurrentHistory(historyByPj, currentPjId)
+    // const newHistory = pushUndoItem(currentHistory, undoItem, MAX_STACK_SIZE)
+    // const newHistoryMap = updateHistoryMap(historyByPj, currentPjId, newHistory)
+
+    set({ projects: newPjs, historyByPj: nextHistoryMap })
   },
   showDoneNodes: true,
   setShowDoneNodes: (show: boolean) => {
@@ -951,105 +987,131 @@ export const createMindMapSlice: StateCreator<
   },
   /* undo・redo管理 */
   historyByPj: {},
+  clearAllHistories: () => {
+    set(() => {
+      return {
+        historyByPj: {},
+      }
+    })
+  },
 
-  // CustomNodeからのみ使用？
+  // CustomNodeからのみ使用
   // （その他のグラフ変更時のundo反映処理は、各グラフ変更関数内に記載）
   pushPrevGraphToUndo: (currentPjId: string, prevGraph: StackItem) => {
-    const { historyByPj } = get()
+    set((prev) => {
+      const { historyByPj } = prev
 
-    const undoItem: StackItem = cloneSnapshot(
-      prevGraph.nodes,
-      prevGraph.edges,
-      prevGraph.focusedNodeId
-    )
-    const currentHistory = getCurrentHistory(historyByPj, currentPjId)
-    const newHistory = pushUndoItem(currentHistory, undoItem, MAX_STACK_SIZE)
-    const newHistoryMap = updateHistoryMap(historyByPj, currentPjId, newHistory)
+      const nextHistoryMap = pushUndoSnapshotForProject({
+        nodes: prevGraph.nodes,
+        edges: prevGraph.edges,
+        focusedNodeId: prevGraph.focusedNodeId,
+        kanbanIndex: prevGraph.kanbanIndex,
+        kanbanColumns: prevGraph.kanbanColumns,
+        historyByPj,
+        pjId: currentPjId,
+        maxStackSize: MAX_STACK_SIZE,
+      })
 
-    set({ historyByPj: newHistoryMap })
-  },
-  undo: () => {
-    const {
-      projects: currentPjs,
-      focusedNodeId,
-      currentPjId,
-      historyByPj,
-    } = get()
-    const history = getCurrentHistory(historyByPj, currentPjId)
-    const currentPj = getCurrentPj(currentPjs, currentPjId)
-    const { undoStack, redoStack } = history
-
-    const [poppedItem, newUndoStack] = popFromStack(undoStack)
-    if (!poppedItem) return //pop対象0の場合undefinedを返すため
-
-    const redoItem = cloneSnapshot(
-      currentPj.nodes,
-      currentPj.edges,
-      focusedNodeId
-    )
-    const newRedoStack = pushToStack(redoStack, redoItem, MAX_STACK_SIZE)
-
-    const restoredPj = updateGraphInPj(
-      currentPj,
-      poppedItem.nodes,
-      poppedItem.edges
-    )
-    const restoredPjs = updatePjInPjs(currentPjs, currentPjId, restoredPj)
-
-    const newHistory: History = {
-      undoStack: newUndoStack,
-      redoStack: newRedoStack,
-    }
-    const newHistoryMap = updateHistoryMap(historyByPj, currentPjId, newHistory)
-
-    set({
-      projects: restoredPjs,
-      historyByPj: newHistoryMap,
-      focusedNodeId: poppedItem.focusedNodeId,
-      editingNodeId: null,
-      commentPopupId: null,
+      return {
+        historyByPj: nextHistoryMap,
+      }
     })
+
+    // const undoItem: StackItem = cloneSnapshot(
+    //   prevGraph.nodes,
+    //   prevGraph.edges,
+    //   prevGraph.focusedNodeId,
+    //   prevGraph.kanbanIndex,
+    //   prevGraph.kanbanColumns
+    // )
+    // const currentHistory = getCurrentHistory(historyByPj, currentPjId)
+    // const newHistory = pushUndoItem(currentHistory, undoItem, MAX_STACK_SIZE)
+    // const newHistoryMap = updateHistoryMap(historyByPj, currentPjId, newHistory)
+
+    // set({ historyByPj: newHistoryMap })
   },
-  redo: () => {
-    const {
-      projects: currentPjs,
-      currentPjId,
-      focusedNodeId,
-      historyByPj,
-    } = get()
-    const history = getCurrentHistory(historyByPj, currentPjId)
-    const currentPj = getCurrentPj(currentPjs, currentPjId)
-    const { undoStack, redoStack } = history
+  // undo: () => {
+  //   const {
+  //     projects: currentPjs,
+  //     focusedNodeId,
+  //     currentPjId,
+  //     historyByPj,
+  //   } = get()
+  //   const history = getCurrentHistory(historyByPj, currentPjId)
+  //   const currentPj = getCurrentPj(currentPjs, currentPjId)
+  //   const { undoStack, redoStack } = history
 
-    const [poppedItem, newRedoStack] = popFromStack(redoStack)
-    if (!poppedItem) return //pop対象0の場合undefinedを返すため
+  //   const [poppedItem, newUndoStack] = popFromStack(undoStack)
+  //   if (!poppedItem) return //pop対象0の場合undefinedを返すため
 
-    const undoItem = cloneSnapshot(
-      currentPj.nodes,
-      currentPj.edges,
-      focusedNodeId
-    )
-    const newUndoStack = pushToStack(undoStack, undoItem, MAX_STACK_SIZE)
+  //   const redoItem = cloneSnapshot(
+  //     currentPj.nodes,
+  //     currentPj.edges,
+  //     focusedNodeId
+  //   )
+  //   const newRedoStack = pushToStack(redoStack, redoItem, MAX_STACK_SIZE)
 
-    const restoredPj = updateGraphInPj(
-      currentPj,
-      poppedItem.nodes,
-      poppedItem.edges
-    )
-    const restoredPjs = updatePjInPjs(currentPjs, currentPjId, restoredPj)
+  //   const restoredPj = updateGraphInPj(
+  //     currentPj,
+  //     poppedItem.nodes,
+  //     poppedItem.edges
+  //   )
+  //   const restoredPjs = updatePjInPjs(currentPjs, currentPjId, restoredPj)
 
-    const newHistory: History = {
-      undoStack: newUndoStack,
-      redoStack: newRedoStack,
-    }
-    const newHistoryMap = updateHistoryMap(historyByPj, currentPjId, newHistory)
+  //   const newHistory: History = {
+  //     undoStack: newUndoStack,
+  //     redoStack: newRedoStack,
+  //   }
+  //   const newHistoryMap = updateHistoryMap(historyByPj, currentPjId, newHistory)
 
-    set({
-      projects: restoredPjs,
-      historyByPj: newHistoryMap,
-      focusedNodeId: poppedItem.focusedNodeId,
-      editingNodeId: null,
-      commentPopupId: null,
-    })
-  },
+  //   set({
+  //     projects: restoredPjs,
+  //     historyByPj: newHistoryMap,
+  //     focusedNodeId: poppedItem.focusedNodeId,
+  //     editingNodeId: null,
+  //     commentPopupId: null,
+  //   })
+  // },
+  // redo: () => {
+  //   const {
+  //     projects: currentPjs,
+  //     currentPjId,
+  //     focusedNodeId,
+  //     historyByPj,
+  //   } = get()
+  //   const history = getCurrentHistory(historyByPj, currentPjId)
+  //   const currentPj = getCurrentPj(currentPjs, currentPjId)
+  //   const { undoStack, redoStack } = history
+
+  //   const [poppedItem, newRedoStack] = popFromStack(redoStack)
+  //   if (!poppedItem) return //pop対象0の場合undefinedを返すため
+
+  //   const undoItem = cloneSnapshot(
+  //     currentPj.nodes,
+  //     currentPj.edges,
+  //     focusedNodeId
+  //   )
+  //   const newUndoStack = pushToStack(undoStack, undoItem, MAX_STACK_SIZE)
+
+  //   const restoredPj = updateGraphInPj(
+  //     currentPj,
+  //     poppedItem.nodes,
+  //     poppedItem.edges
+  //   )
+  //   const restoredPjs = updatePjInPjs(currentPjs, currentPjId, restoredPj)
+
+  //   const newHistory: History = {
+  //     undoStack: newUndoStack,
+  //     redoStack: newRedoStack,
+  //   }
+  //   const newHistoryMap = updateHistoryMap(historyByPj, currentPjId, newHistory)
+
+  //   set({
+  //     projects: restoredPjs,
+  //     historyByPj: newHistoryMap,
+  //     focusedNodeId: poppedItem.focusedNodeId,
+  //     editingNodeId: null,
+  //     commentPopupId: null,
+  //   })
+  // },
 })

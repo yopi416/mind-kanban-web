@@ -1,16 +1,47 @@
-import type { StackItem, NodeData, History, HistoryByPj } from '@/types'
+import type {
+  StackItem,
+  NodeData,
+  History,
+  HistoryByPj,
+  KanbanIndex,
+  KanbanColumns,
+} from '@/types'
 import type { Node, Edge } from '@xyflow/react'
+import { MAX_STACK_SIZE } from '../constants'
 
 // undo/redoスタック追加用nodes,edgesをdeepcopy
 export const cloneSnapshot = (
   nodes: Node<NodeData>[],
   edges: Edge[],
-  focusedNodeId: string | null
+  focusedNodeId: string | null,
+  kanbanIndex: KanbanIndex,
+  kanbanColumns: KanbanColumns
 ): StackItem => {
   return {
     nodes: structuredClone(nodes),
     edges: structuredClone(edges),
     focusedNodeId,
+    kanbanIndex: cloneKanbanIndex(kanbanIndex),
+    kanbanColumns: cloneKanbanColumns(kanbanColumns),
+  }
+}
+
+// Map<string, Set<string>> の安全クローン
+function cloneKanbanIndex(idx: KanbanIndex): KanbanIndex {
+  const next = new Map<string, Set<string>>()
+  for (const [pjId, set] of idx) {
+    next.set(pjId, new Set(set)) // Set も複製
+  }
+  return next
+}
+
+// 各列の配列と要素オブジェクトを複製
+function cloneKanbanColumns(cols: KanbanColumns): KanbanColumns {
+  return {
+    backlog: cols.backlog.map((c) => ({ ...c })),
+    todo: cols.todo.map((c) => ({ ...c })),
+    doing: cols.doing.map((c) => ({ ...c })),
+    done: cols.done.map((c) => ({ ...c })),
   }
 }
 
@@ -76,4 +107,45 @@ export function updateHistoryMap(
     ...historyByPj,
     [currentPjId]: newHistory,
   }
+}
+
+// UndoStackに積む一連の関数をまとめた関数
+export function pushUndoSnapshotForProject(args: {
+  // 生成するUndoItem
+  nodes: Node<NodeData>[]
+  edges: Edge[]
+  focusedNodeId: string | null
+  kanbanIndex: KanbanIndex
+  kanbanColumns: KanbanColumns
+
+  // 特定のpjのhistoryに追加用
+  historyByPj: HistoryByPj
+  pjId: string
+  maxStackSize?: number // 既定: MAX_STACK_SIZE
+}): HistoryByPj {
+  // 引数の順番ずれや、今後の追加を鑑みてオブジェクトを引数とする
+  const {
+    historyByPj,
+    pjId,
+    nodes,
+    edges,
+    focusedNodeId,
+    kanbanIndex,
+    kanbanColumns,
+    maxStackSize = MAX_STACK_SIZE,
+  } = args
+
+  const undoItem: StackItem = cloneSnapshot(
+    nodes,
+    edges,
+    focusedNodeId,
+    kanbanIndex,
+    kanbanColumns
+  )
+
+  const currentHistory = getCurrentHistory(historyByPj, pjId)
+  const nextHistory = pushUndoItem(currentHistory, undoItem, maxStackSize)
+
+  // 不変更新（該当PJのみ差し替え）
+  return updateHistoryMap(historyByPj, pjId, nextHistory)
 }

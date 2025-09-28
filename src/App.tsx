@@ -13,6 +13,7 @@ import { AppLayout } from './pages/AppLayout'
 import type { WholeStoreState } from '@/types'
 import { useWholeStore } from '@/state/store'
 import { useShallow } from 'zustand/shallow'
+import { ClearHistoryOnRoute } from './components/ClearHistoryOnRoute'
 
 const selector = (store: WholeStoreState) => {
   return {
@@ -35,6 +36,7 @@ function App() {
   return (
     <>
       <BrowserRouter>
+        <ClearHistoryOnRoute />
         <Routes>
           <Route index element={<Navigate to="login" replace />} />{' '}
           {/* HomePageを追加予定 */}
