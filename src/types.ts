@@ -1,5 +1,7 @@
 import type { Node, Edge, OnNodesChange, OnEdgesChange } from '@xyflow/react'
 
+export type WholeStoreState = MindMapSlice & KanbanSlice & OrchestratorSlice
+
 /* Nodeの中身を規定 */
 export type NodeComment = {
   id: string
@@ -63,30 +65,32 @@ export type MindMapSlice = {
   currentPjId: string
   setCurrentPjId: (newPjId: string) => void
 
-  addPj: () => void
+  // addPj: () => void
   renamePj: (pjId: string, newPjName: string) => void
-  deletePj: (pjId: string) => void
+  // deletePj: (pjId: string) => void
 
   /* 選択中のPJのノード・エッジ管理 */
   onNodesChange: OnNodesChange<Node<NodeData>>
   onEdgesChange: OnEdgesChange
 
-  deleteNodes: (nodeIdToDelete: string) => void
+  // deleteNodes: (nodeIdToDelete: string) => void
   setNodes: (nodes: Node<NodeData>[]) => void
-  addHorizontalElement: (parentId: string) => void
-  addVerticalElement: (aboveNodeId: string, parentId: string) => void
+  // addHorizontalElement: (parentId: string) => void
+  // addVerticalElement: (aboveNodeId: string, parentId: string) => void
 
-  moveNodeTobeChild: (movingNodeId: string, parentId: string) => void
-  moveNodeAboveTarget: (
-    movingNodeId: string,
-    belowNodeId: string,
-    parentId: string
-  ) => void
-  moveNodeBelowTarget: (
-    movingNodeId: string,
-    aboveNodeId: string,
-    parentId: string
-  ) => void
+  // moveNodeTobeChild: (movingNodeId: string, parentId: string) => void
+
+  // moveNodeAboveTarget: (
+  //   movingNodeId: string,
+  //   belowNodeId: string,
+  //   parentId: string
+  // ) => void
+
+  // moveNodeBelowTarget: (
+  //   movingNodeId: string,
+  //   aboveNodeId: string,
+  //   parentId: string
+  // ) => void
 
   updateNodeLabel: (nodeId: string, label: string) => void
   movingNodeId: string | null //移動するためにドラッグしているノード
@@ -163,8 +167,6 @@ export type KanbanSlice = {
   removeDoneCards: () => void
 }
 
-export type WholeStoreState = MindMapSlice & KanbanSlice
-
 // Sliceに分割する前のゴミ
 export type MindMapStore = {
   /* 複数PJ管理 */
@@ -180,22 +182,24 @@ export type MindMapStore = {
   onNodesChange: OnNodesChange<Node<NodeData>>
   onEdgesChange: OnEdgesChange
 
-  deleteNodes: (nodeIdToDelete: string) => void
+  deleteNodes: (nodeIdToDelete: string) => void // OrchestratorSliceに移行（未使用）
   setNodes: (nodes: Node<NodeData>[]) => void
-  addHorizontalElement: (parentId: string) => void
-  addVerticalElement: (aboveNodeId: string, parentId: string) => void
+  addHorizontalElement: (parentId: string) => void // OrchestratorSliceに移行（未使用）
+  addVerticalElement: (aboveNodeId: string, parentId: string) => void // OrchestratorSliceに移行（未使用）
 
-  moveNodeTobeChild: (movingNodeId: string, parentId: string) => void
+  moveNodeTobeChild: (movingNodeId: string, parentId: string) => void // OrchestratorSliceに移行（未使用）
+
   moveNodeAboveTarget: (
     movingNodeId: string,
     belowNodeId: string,
     parentId: string
-  ) => void
+  ) => void // OrchestratorSliceに移行（未使用）
+
   moveNodeBelowTarget: (
     movingNodeId: string,
     aboveNodeId: string,
     parentId: string
-  ) => void
+  ) => void // OrchestratorSliceに移行（未使用）
 
   updateNodeLabel: (nodeId: string, label: string) => void
   movingNodeId: string | null //移動するためにドラッグしているノード
@@ -226,4 +230,31 @@ export type MindMapStore = {
 
   undo: () => void
   redo: () => void
+}
+
+/*-------------------------
+OrchestratorSlice
+(カンバン・マインドマップ両方の更新)
+---------------------------*/
+
+export type OrchestratorSlice = {
+  addPj: () => void
+  deletePj: (pjId: string) => void
+
+  deleteNodesCascade: (nodeIdToDelete: string) => void
+
+  addHorizontalElement: (parentId: string) => void
+  addVerticalElement: (aboveNodeId: string, parentId: string) => void
+
+  moveNodeTobeChild: (movingNodeId: string, parentId: string) => void
+  moveNodeAboveTarget: (
+    movingNodeId: string,
+    belowNodeId: string,
+    parentId: string
+  ) => void
+  moveNodeBelowTarget: (
+    movingNodeId: string,
+    aboveNodeId: string,
+    parentId: string
+  ) => void
 }
