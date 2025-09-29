@@ -28,7 +28,7 @@ function AuthGate() {
     return <Navigate to="login" replace />
   }
 
-  console.log('試験用のため常に認証成功')
+  console.log('試験用なので常に認証成功')
   return <Outlet /> // ← 一旦は常に通す
 }
 
