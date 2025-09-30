@@ -26,6 +26,12 @@ import { ROOT_NODE_ID } from './constants'
 import { Button } from '@/components/ui/button'
 import { FaUndoAlt, FaRedoAlt } from 'react-icons/fa'
 import { useWholeStore } from '@/state/store'
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@radix-ui/react-tooltip'
 
 const selector = (store: WholeStoreState) => {
   const currentPj = store.projects[store.currentPjId]
@@ -361,13 +367,47 @@ function MindMap() {
 
   return (
     // <div style={{ height: '100%' }}>
-    <div className="h-full w-full">
-      <Button onClick={undo} disabled={!canUndo} size="sm">
+    <div className="relative h-full w-full">
+      {/* Undo/Redo toolbar */}
+      <div className="bg-background/70 absolute left-3 top-3 z-10 flex items-center gap-1 rounded-xl border px-1.5 py-1 shadow-sm backdrop-blur">
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={undo}
+                disabled={!canUndo}
+                aria-label="戻る (Ctrl+Z)"
+              >
+                <FaUndoAlt size={14} />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>戻る（Ctrl+Z）</TooltipContent>
+          </Tooltip>
+
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={redo}
+                disabled={!canRedo}
+                aria-label="進む (Ctrl+Shift+Z)"
+              >
+                <FaRedoAlt size={14} />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>進む（Ctrl+Shift+Z）</TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
+      </div>
+      {/* <Button onClick={undo} disabled={!canUndo} size="sm">
         <FaUndoAlt size={10} />
       </Button>
       <Button onClick={redo} disabled={!canRedo} size="sm">
         <FaRedoAlt size={10} />
-      </Button>
+      </Button> */}
       <ReactFlow
         nodes={nodes}
         edges={edges}
