@@ -4,6 +4,7 @@ import { useWholeStore } from '@/state/store'
 import { useShallow } from 'zustand/shallow'
 
 import { CardView } from './CardView'
+import { CardSubtasks } from '@/features/mindmap/components/CardSubtasks'
 
 const selector = (store: WholeStoreState) => {
   return {
@@ -31,11 +32,12 @@ export const OverlayCard = () => {
     return null
   }
 
-  const activeNodeData = activeNode.data
+  const { pjId, nodeId } = activeCardRef
 
   return (
     <CardView className="rounded-lg border border-slate-200 bg-white p-3 shadow-sm">
-      {activeNodeData.label}
+      {/* {activeNodeData.label} */}
+      <CardSubtasks card={{ pjId, nodeId }} />
     </CardView>
   )
 }

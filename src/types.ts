@@ -2,6 +2,9 @@ import type { Node, Edge, OnNodesChange, OnEdgesChange } from '@xyflow/react'
 
 export type WholeStoreState = MindMapSlice & KanbanSlice & OrchestratorSlice
 
+// kanbanボードの子タスクから、孫タスク以降を検索する際に使用(CardSubtasks.tsx)
+export type DepthNode = { node: Node<NodeData>; depth: number }
+
 /* Nodeの中身を規定 */
 export type NodeComment = {
   id: string
@@ -64,7 +67,10 @@ export type EditSnapshot = {
 
 /* zustand store */
 
+/*-------------------------
 // mindmapのスライス
+---------------------------*/
+
 export type MindMapSlice = {
   /* 認証管理（開発用） */
   isLogin: boolean
@@ -116,6 +122,13 @@ export type MindMapSlice = {
 
   /* 1ノード内の情報管理 */
   updateIsDone: (nodeId: string, isDone: boolean) => void
+
+  // kanbanボードからタスク完了する際にはpjIdの指定が必要
+  updateIsDoneFromKanban: (
+    pjId: string,
+    nodeId: string,
+    isDone: boolean
+  ) => void
   applyKanbanDoneToMindmap: (
     cardRefList: KanbanCardRef[],
     includeSubtasks: boolean
@@ -140,7 +153,9 @@ export type MindMapSlice = {
   // redo: () => void
 }
 
-// Kanbanボードのスライス
+/*-------------------------
+Kanbanボードのスライス
+---------------------------*/
 
 /* Kanbanボードだが、nodedataは保持しない */
 export type KanbanCardRef = { pjId: string; nodeId: string }

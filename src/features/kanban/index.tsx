@@ -52,7 +52,7 @@ function Kanban() {
         onDragEnd={handleDragEnd}
         onDragCancel={handleDragCancel}
       >
-        <div className="flex items-start gap-6 overflow-x-auto bg-slate-50 px-6 py-5">
+        <div className="pr-25 flex w-full max-w-none items-start gap-4 overflow-x-auto bg-slate-50 py-5 pl-20">
           {colNames.map((colName) => (
             <KanbanColumn key={colName} colName={colName} />
           ))}

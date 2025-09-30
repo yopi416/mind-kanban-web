@@ -27,8 +27,7 @@ export const KanbanColumn = (props: KanbanColumnProps) => {
   return (
     <div
       key={props.colName}
-      className="flex min-h-[70vh] min-w-[320px] max-w-[340px] flex-col rounded-xl border border-slate-200 bg-slate-100 shadow-sm"
-      // className="flex min-w-[320px] max-w-[340px] flex-col rounded-xl border border-slate-200 bg-white shadow-sm"
+      className="flex min-h-[70vh] min-w-0 flex-1 basis-0 flex-col rounded-xl border border-slate-200 bg-slate-100 shadow-sm"
     >
       {/* 共通デザインのヘッダー */}
       <div className="flex items-center justify-between rounded-t-xl bg-slate-100 px-3 py-2">
