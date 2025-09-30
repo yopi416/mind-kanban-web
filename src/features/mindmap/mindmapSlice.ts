@@ -735,17 +735,31 @@ export const createMindMapSlice: StateCreator<
       pjId: currentPjId,
       maxStackSize: MAX_STACK_SIZE,
     })
-
-    // const undoItem: StackItem = cloneSnapshot(
-    //   currentNodes,
-    //   currentEdges,
-    //   focusedNodeId
-    // )
-    // const currentHistory = getCurrentHistory(historyByPj, currentPjId)
-    // const newHistory = pushUndoItem(currentHistory, undoItem, MAX_STACK_SIZE)
-    // const newHistoryMap = updateHistoryMap(historyByPj, currentPjId, newHistory)
-
     set({ projects: newPjs, historyByPj: nextHistoryMap })
+  },
+  updateIsDoneFromKanban: (pjId: string, nodeId: string, isDone: boolean) => {
+    const { projects: currentPjs } = get()
+    const currentPj = getCurrentPj(currentPjs, pjId)
+    const { nodes: currentNodes, edges: currentEdges } = currentPj
+
+    const newNodes = currentNodes.map((node) => {
+      if (node.id !== nodeId) return node
+
+      return {
+        ...node,
+        data: {
+          ...node.data,
+          isDone,
+        },
+      }
+    })
+
+    // 新nodes,edgesを反映したprojectsを取得
+    // 注意：storeへの反映は末尾のsetでまとめて実施
+    const newPj = updateGraphInPj(currentPj, newNodes, currentEdges)
+    const newPjs = updatePjInPjs(currentPjs, pjId, newPj)
+
+    set({ projects: newPjs })
   },
   applyKanbanDoneToMindmap: (
     cardRefList: KanbanCardRef[],

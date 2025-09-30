@@ -1,5 +1,5 @@
 import { type Node, type Edge } from '@xyflow/react'
-import { type NodeData } from '../../../types'
+import { type DepthNode, type NodeData } from '../../../types'
 
 /* 与えられたノード自身に関する関数 */
 
@@ -249,4 +249,34 @@ export function getEdgesExcludingSubtree(
   )
 
   return edgesExcludingSubtree
+}
+
+// 指定ノードの“全子孫”を (node, depth) の配列で返すヘルパ
+
+export function selectDescendants(
+  nodes: Node<NodeData>[],
+  rootId: string
+): DepthNode[] {
+  // parentId -> 子ノード配列
+  const nodesByParent = new Map<string, Node<NodeData>[]>()
+  for (const n of nodes) {
+    const p = n.data.parentId ?? ''
+    if (!nodesByParent.has(p)) nodesByParent.set(p, [])
+    // nodes の順に push されるので兄弟順が保証される
+    nodesByParent.get(p)!.push(n)
+  }
+
+  const out: DepthNode[] = []
+
+  // 再帰 DFS
+  function dfs(id: string, depth: number) {
+    const children = nodesByParent.get(id) || []
+    for (const c of children) {
+      out.push({ node: c, depth: depth + 1 })
+      dfs(c.id, depth + 1)
+    }
+  }
+
+  dfs(rootId, 0)
+  return out
 }

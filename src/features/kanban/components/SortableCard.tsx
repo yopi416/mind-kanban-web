@@ -2,15 +2,20 @@ import { useWholeStore } from '@/state/store'
 import type { WholeStoreState } from '@/types'
 import { useSortable } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
-import type { KanbanCardRef, NodeData, Projects } from '@/types'
-import type { Node } from '@xyflow/react'
+import type { KanbanCardRef } from '@/types'
 import { CardView } from './CardView'
 import { useShallow } from 'zustand/shallow'
-import { useMemo } from 'react'
 import { FiTrash2 } from 'react-icons/fi'
+import { CardSubtasks } from '@/features/mindmap/components/CardSubtasks'
 
 // type SortableProps = Card & { activeCardId: UniqueIdentifier | null }
 type SortableCardProps = KanbanCardRef
+
+const selector = (store: WholeStoreState) => {
+  return {
+    removeCard: store.removeCard,
+  }
+}
 
 export function SortableCard(props: SortableCardProps) {
   const { pjId, nodeId } = props
@@ -25,35 +30,7 @@ export function SortableCard(props: SortableCardProps) {
     isDragging,
   } = useSortable({ id: nodeId })
 
-  const selector = useMemo(
-    () => (store: WholeStoreState) => {
-      // zustand storeのPjsから、このカード（nodeId）に対応するカードの中身(nodeData)を取ってくる
-
-      const allPjs: Projects = store.projects
-      const nodesInTargetPj = allPjs[pjId].nodes
-
-      // 【ロジック改善検討余地あり】 現状、全カードでorder(N)
-      // おそらくそこまで枚数が多くないので、大丈夫かもだが影響が出そうなら改善を検討
-      const targetNode: Node<NodeData> | undefined = nodesInTargetPj.find(
-        (node) => node.id === nodeId
-      )
-
-      if (!targetNode) {
-        console.warn(`Node not found: pjId=${pjId}, nodeId=${nodeId}`)
-      }
-
-      return {
-        cardData: targetNode ? targetNode.data : null,
-        removeCard: store.removeCard,
-      }
-    },
-    [pjId, nodeId]
-  )
-
-  const { cardData, removeCard } = useWholeStore(useShallow(selector))
-
-  // nullを返したとしても、呼び出し元のmapは無視して描画するため問題なし
-  if (!cardData) return null
+  const { removeCard } = useWholeStore(useShallow(selector))
 
   const style = {
     transform: CSS.Transform.toString(transform),
@@ -64,7 +41,7 @@ export function SortableCard(props: SortableCardProps) {
   //   'rounded-lg border bg-white p-3 shadow-sm transition-all duration-150'
 
   let cls =
-    'relative rounded-lg border border-slate-200 bg-white p-3 shadow-sm transition-all duration-150 hover:border-slate-300 hover:shadow-md'
+    'relative min-w-0 overflow-hidden rounded-lg border border-slate-200 bg-white p-3 shadow-sm transition-all duration-150 hover:border-slate-300 hover:shadow-md'
 
   if (isDragging) {
     // dragされている時薄くなる + 縮む
@@ -102,7 +79,8 @@ export function SortableCard(props: SortableCardProps) {
         <FiTrash2 className="h-3 w-3" />
       </button>
 
-      {cardData.label}
+      {/* パンくず＋子タスク（Depth=1） */}
+      <CardSubtasks card={{ pjId, nodeId }} />
     </CardView>
   )
 }
