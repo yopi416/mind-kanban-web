@@ -65,7 +65,7 @@ export default function AppHeader({ user }: AppHeaderProps) {
 
   return (
     <header className="bg-background/80 supports-[backdrop-filter]:bg-background/60 sticky top-0 z-40 w-full border-b backdrop-blur">
-      <div className="mx-auto flex h-14 max-w-screen-2xl items-center gap-3 px-3 sm:h-16 sm:px-6">
+      <div className="flex h-14 w-full items-center justify-between gap-3 px-3 sm:h-16 sm:px-6 lg:px-8 xl:px-10 2xl:px-12">
         {/* Left: Logo */}
         <Link to="/" className="shrink-0" aria-label="Home">
           <Logo />

@@ -4,7 +4,7 @@ import { RiKanbanView2 } from 'react-icons/ri' //kanbanIcon
 // import { MdOutlineCheckBox } from 'react-icons/md' //checkIcon
 // import { MdOutlineTextRotationAngleup } from 'react-icons/md' //checkIcon
 // import { MdOutlineCheckBoxOutlineBlank} from "react-icons/md"; //checkIcon
-import { CiCirclePlus } from 'react-icons/ci' //plusIcon
+// import { CiCirclePlus } from 'react-icons/ci' //plusIcon
 // import useMindMapStore from '../store'
 import { useShallow } from 'zustand/shallow'
 import clsx from 'clsx'
@@ -46,8 +46,8 @@ function CustomNode({ id, data }: NodeProps<Node<NodeData>>) {
   // subscribe理由：ここでfocsudNodeIdを取得しisFocusedの判定に用いると、他ノードFocus時も再レンダリングされるため
   const {
     updateNodeLabel,
-    addHorizontalElement,
-    addVerticalElement,
+    // addHorizontalElement,
+    // addVerticalElement,
     setFocusedNodeId,
     setEditingNodeId,
     setCommentPopupId,
@@ -368,7 +368,7 @@ function CustomNode({ id, data }: NodeProps<Node<NodeData>>) {
         {/* 右端のボタン群 */}
         <div className="flex items-center gap-2">
           {/* 真下にノード追加 */}
-          {data.parentId && (
+          {/* {data.parentId && (
             <button
               type="button"
               onClick={() => addVerticalElement(id, data.parentId!)}
@@ -376,17 +376,17 @@ function CustomNode({ id, data }: NodeProps<Node<NodeData>>) {
             >
               <CiCirclePlus size={20} />
             </button>
-          )}
+          )} */}
 
           {/* 子ノード追加 */}
 
-          <button
+          {/* <button
             type="button"
             onClick={() => addHorizontalElement(id)}
             className="relative z-[2]"
           >
             <CiCirclePlus size={20} />
-          </button>
+          </button> */}
 
           {/* タスクの完了状態を変更 */}
           <Checkbox
