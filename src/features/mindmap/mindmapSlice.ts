@@ -50,7 +50,10 @@ export const createMindMapSlice: StateCreator<
   setIsLogin: (isLogin: boolean) => {
     set({ isLogin })
   },
-
+  authStatus: 'unknown',
+  setAuthStatus: (authStatus) => {
+    set({ authStatus })
+  },
   projects: {
     pj1: {
       id: 'pj1',

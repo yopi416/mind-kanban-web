@@ -1,105 +1,109 @@
-import { useNavigate } from 'react-router'
+// import { useNavigate } from 'react-router'
 // import { useWholeStore } from '@/state/store'
 // import { dummyBootstrap } from '@/dummy/bootstrap'
-import { useState } from 'react'
-import type {
-  Projects,
-  WholeStoreState,
-  KanbanColumns,
-  KanbanIndex,
-} from '@/types'
-import { useWholeStore } from '@/state/store'
-import { useShallow } from 'zustand/shallow'
-import { initialPjs } from '../mindmap/mockInitialElements'
+// import { useState } from 'react'
+import type {} from // Projects,
+// WholeStoreState,
+// KanbanColumns,
+// KanbanIndex,
+'@/types'
+// import { useWholeStore } from '@/state/store'
+// import { useShallow } from 'zustand/shallow'
+// import { initialPjs } from '../mindmap/mockInitialElements'
+import { OIDC_GOOGLE_LOGIN_ENDPOINT } from '@/constants/api'
 
-const selector = (store: WholeStoreState) => {
-  return {
-    isLogin: store.isLogin,
-    setIsLogin: store.setIsLogin,
-    setProjects: store.setProjects,
-    setCurrentPjId: store.setCurrentPjId,
-    setKanbanIndex: store.setKanbanIndex,
-    setKanbanColumns: store.setKanbanColumns,
-  }
-}
+// const selector = (store: WholeStoreState) => {
+//   return {
+//     isLogin: store.isLogin,
+//     setIsLogin: store.setIsLogin,
+//     setProjects: store.setProjects,
+//     setCurrentPjId: store.setCurrentPjId,
+//     setKanbanIndex: store.setKanbanIndex,
+//     setKanbanColumns: store.setKanbanColumns,
+//   }
+// }
 
 export function Login() {
-  const navigate = useNavigate()
+  // const navigate = useNavigate()
   // const setAuth = useWholeStore((s) => s.setAuth)
-  const setAuth = () => {
-    console.log('dummy Auth')
-  }
+  // const setAuth = () => {
+  //   console.log('dummy Auth')
+  // }
 
-  const {
-    isLogin,
-    setIsLogin,
-    setProjects,
-    setCurrentPjId,
-    setKanbanColumns,
-    setKanbanIndex,
-  } = useWholeStore(useShallow(selector))
-  const [loading, setLoading] = useState(false)
+  // const {
+  //   // isLogin,
+  //   // setIsLogin,
+  //   setProjects,
+  //   setCurrentPjId,
+  //   setKanbanColumns,
+  //   setKanbanIndex,
+  // } = useWholeStore(useShallow(selector))
+  // const [loading, setLoading] = useState(false)
 
   //   const initFromServer = useWholeStore((s) => s.initFromServer)
   // DBからとってきたデータで、zustand storeのマインドマップとカンバンデータを初期化
-  const initStore = () => {
-    console.log('dummy init')
+  // const initStore = () => {
+  //   console.log('dummy init')
 
-    // マインドマップデータの初期化
-    const intitialProjects: Projects = initialPjs
-    setProjects(intitialProjects)
+  //   // マインドマップデータの初期化
+  //   const intitialProjects: Projects = initialPjs
+  //   setProjects(intitialProjects)
 
-    // CurrentPjIdの初期化
-    const initialCurrentPjId: string = 'pj1'
-    setCurrentPjId(initialCurrentPjId)
+  //   // CurrentPjIdの初期化
+  //   const initialCurrentPjId: string = 'pj1'
+  //   setCurrentPjId(initialCurrentPjId)
 
-    // カンバンIndexの初期化
-    const initialKanbanIndex: KanbanIndex = new Map([
-      // ['pj1', new Set(['2'])],
-      // ['pj2', new Set(['2-2a', '2-2b', '2-3a', '2-3b'])],
-      ['pj1', new Set([])],
-      ['pj2', new Set([])],
-    ])
-    setKanbanIndex(initialKanbanIndex)
+  //   // カンバンIndexの初期化
+  //   const initialKanbanIndex: KanbanIndex = new Map([
+  //     // ['pj1', new Set(['2'])],
+  //     // ['pj2', new Set(['2-2a', '2-2b', '2-3a', '2-3b'])],
+  //     ['pj1', new Set([])],
+  //     ['pj2', new Set([])],
+  //   ])
+  //   setKanbanIndex(initialKanbanIndex)
 
-    // カンバンデータの初期化
-    const initialKanbanColumns: KanbanColumns = {
-      backlog: [
-        // { pjId: 'pj1', nodeId: '2' },
-        // { pjId: 'pj2', nodeId: '2-2a' },
-      ],
-      todo: [
-        // { pjId: 'pj2', nodeId: '2-2b' }
-      ],
-      doing: [
-        // { pjId: 'pj2', nodeId: '2-3a' }
-      ],
-      done: [
-        // { pjId: 'pj2', nodeId: '2-3b' }
-      ],
-    }
-    setKanbanColumns(initialKanbanColumns)
+  //   // カンバンデータの初期化
+  //   const initialKanbanColumns: KanbanColumns = {
+  //     backlog: [
+  //       // { pjId: 'pj1', nodeId: '2' },
+  //       // { pjId: 'pj2', nodeId: '2-2a' },
+  //     ],
+  //     todo: [
+  //       // { pjId: 'pj2', nodeId: '2-2b' }
+  //     ],
+  //     doing: [
+  //       // { pjId: 'pj2', nodeId: '2-3a' }
+  //     ],
+  //     done: [
+  //       // { pjId: 'pj2', nodeId: '2-3b' }
+  //     ],
+  //   }
+  //   setKanbanColumns(initialKanbanColumns)
 
-    console.log('init has been done!!')
-  }
+  //   console.log('init has been done!!')
+  // }
 
-  const onDummyGoogleLogin = () => {
-    if (loading || isLogin) return
-    setLoading(true) //navigate後にLoginPageはアンマウントされるのでtrueは維持されない
+  // const onDummyGoogleLogin = () => {
+  //   if (loading || isLogin) return
+  //   setLoading(true) //navigate後にLoginPageはアンマウントされるのでtrueは維持されない
 
-    // ← 実装ができたらここを window.location.href = '/auth/login' に差し替え
-    setAuth()
-    initStore()
-    setIsLogin(true)
+  //   // ← 実装ができたらここを window.location.href = '/auth/login' に差し替え
+  //   setAuth()
+  //   initStore()
+  //   setIsLogin(true)
 
-    // setAuth('dummy-token', dummyBootstrap.userId)
-    // initFromServer({
-    //   userId: dummyBootstrap.userId,
-    //   currentPjId: dummyBootstrap.currentPjId,
-    //   projects: dummyBootstrap.projects,
-    //   kanban: dummyBootstrap.kanban,
-    // })
-    navigate('/app/mindmap', { replace: true })
+  //   // setAuth('dummy-token', dummyBootstrap.userId)
+  //   // initFromServer({
+  //   //   userId: dummyBootstrap.userId,
+  //   //   currentPjId: dummyBootstrap.currentPjId,
+  //   //   projects: dummyBootstrap.projects,
+  //   //   kanban: dummyBootstrap.kanban,
+  //   // })
+  //   navigate('/app/mindmap', { replace: true })
+  // }
+
+  const onGoogleLogin = () => {
+    window.location.href = OIDC_GOOGLE_LOGIN_ENDPOINT
   }
 
   // 案1：https://takazoom.hatenablog.com/entry/2015/10/03/101611
@@ -208,8 +212,9 @@ export function Login() {
 
           <button
             type="button"
-            onClick={onDummyGoogleLogin}
-            disabled={loading}
+            // onClick={onDummyGoogleLogin}
+            onClick={onGoogleLogin}
+            // disabled={loading}
             aria-label="Continue with Google"
             className="inline-flex w-full items-center justify-center gap-3 rounded-lg border border-gray-300 bg-white px-5 py-3 text-[15px] font-medium text-gray-900 shadow-sm transition hover:bg-gray-50 active:scale-[0.99] disabled:opacity-70"
           >
@@ -232,7 +237,7 @@ export function Login() {
                 d="M45 24c0-1.4-.1-2.8-.4-4H24v8h11.3c-.6 3-2.3 5.6-4.9 7.5l6.2 5.2C40.8 37.9 45 31.5 45 24z"
               />
             </svg>
-            <span>{loading ? 'Redirecting…' : 'Continue with Google'}</span>
+            {/* <span>{loading ? 'Redirecting…' : 'Continue with Google'}</span> */}
           </button>
         </div>
 

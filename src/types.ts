@@ -75,6 +75,10 @@ export type MindMapSlice = {
   /* 認証管理（開発用） */
   isLogin: boolean
   setIsLogin: (isLogin: boolean) => void
+  authStatus: 'unknown' | 'authenticated' | 'unauthenticated'
+  setAuthStatus: (
+    status: 'unknown' | 'authenticated' | 'unauthenticated'
+  ) => void
 
   /* 複数PJ管理 */
   projects: Projects

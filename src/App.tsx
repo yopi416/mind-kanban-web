@@ -17,13 +17,18 @@ import { ClearHistoryOnRoute } from './components/ClearHistoryOnRoute'
 
 const selector = (store: WholeStoreState) => {
   return {
-    isLogin: store.isLogin,
+    // isLogin: store.isLogin,
+    authStatus: store.authStatus,
   }
 }
 
 function AuthGate() {
-  const { isLogin } = useWholeStore(useShallow(selector))
-  if (!isLogin) {
+  const { authStatus } = useWholeStore(useShallow(selector))
+
+  // 初回はAuthGateをすり抜けて、AppLayout内でのログインチェックを受けたいため以下のように設定
+  // - 初回ログイン後のログインチェック前 = unknown
+  // - 初回ログイン後のログインチェック後 = authed/ unauthed
+  if (authStatus === 'unauthenticated') {
     console.log('Login していないのでリダイレクト')
     return <Navigate to="login" replace />
   }
