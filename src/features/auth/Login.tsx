@@ -237,6 +237,7 @@ export function Login() {
                 d="M45 24c0-1.4-.1-2.8-.4-4H24v8h11.3c-.6 3-2.3 5.6-4.9 7.5l6.2 5.2C40.8 37.9 45 31.5 45 24z"
               />
             </svg>
+            <span>Continue with Google</span>
             {/* <span>{loading ? 'Redirecting…' : 'Continue with Google'}</span> */}
           </button>
         </div>
@@ -248,52 +249,4 @@ export function Login() {
       </div>
     </div>
   )
-
-  // 案②↓
-
-  //   return (
-  //     <div className="flex h-screen overflow-hidden bg-white text-gray-900">
-  //       {/* Left brand rail */}
-  //       <aside className="hidden md:flex md:w-[380px] lg:w-[420px] h-full bg-[#1F3A66] text-white">
-  //         <div className="mx-auto flex w-full max-w-[280px] flex-col items-start justify-center">
-  //           <div className="text-5xl font-semibold tracking-wide">Logo</div>
-  //           <div className="mt-8 flex items-center gap-3 opacity-80">
-  //             <span className="block h-3 w-3 rounded-full bg-white/90" />
-  //             <span className="block h-3 w-3 rounded-full bg-white/60" />
-  //             <span className="block h-3 w-3 rounded-full bg-white/60" />
-  //           </div>
-  //         </div>
-  //       </aside>
-
-  //       {/* Right content */}
-  //       <main className="flex-1">
-  //         <div className="mx-auto flex h-full max-w-[880px] items-center px-6 sm:px-10 lg:px-20">
-  //           <div className="w-full">
-  //             <h1 className="text-4xl sm:text-5xl font-semibold tracking-tight">Login</h1>
-  //             <p className="mt-4 text-lg text-gray-500">
-  //               Googleアカウントでログインしましょう！
-  //             </p>
-
-  //             {/* Google button */}
-  //             <button
-  //               type="button"
-  //               onClick={onDummyGoogleLogin}
-  //               disabled={loading}
-  //               aria-label="Continue with Google"
-  //               className="mt-10 inline-flex w-full max-w-[520px] items-center justify-center gap-3 rounded-md border border-gray-300 bg-white px-5 py-3 text-[15px] font-medium shadow-sm transition hover:bg-gray-50 active:scale-[0.99] disabled:opacity-70"
-  //             >
-  //               {/* Google G icon */}
-  //               <svg width="20" height="20" viewBox="0 0 48 48" aria-hidden="true">
-  //                 <path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3C33.6 31.9 29.3 35 24 35c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.9 1.2 8 3.1l5.7-5.7C33.7 5.1 29.1 3 24 3 12.4 3 3 12.4 3 24s9.4 21 21 21c10.5 0 19.4-7.6 21-18v-6.5z"/>
-  //                 <path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.7 16.6 18.9 13 24 13c3.1 0 5.9 1.2 8 3.1l5.7-5.7C33.7 5.1 29.1 3 24 3 16.1 3 9.2 7.4 6.3 14.7z"/>
-  //                 <path fill="#4CAF50" d="M24 45c5.2 0 9.9-2 13.4-5.2l-6.2-5.2C29.3 35 26.8 36 24 36c-5.2 0-9.6-3.3-11.3-7.9l-6.5 5C9.1 40.5 16 45 24 45z"/>
-  //                 <path fill="#1976D2" d="M45 24c0-1.4-.1-2.8-.4-4H24v8h11.3c-.6 3-2.3 5.6-4.9 7.5l6.2 5.2C40.8 37.9 45 31.5 45 24z"/>
-  //               </svg>
-  //               <span>{loading ? 'Redirecting…' : 'Continue with Google'}</span>
-  //             </button>
-  //           </div>
-  //         </div>
-  //       </main>
-  //     </div>
-  //   )
 }
