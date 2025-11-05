@@ -1,5 +1,5 @@
 // import * as React from "react";
-import { HelpCircle, LogOut } from 'lucide-react'
+import { HelpCircle, LogOut, Trash2 } from 'lucide-react'
 import {
   Tooltip,
   TooltipContent,
@@ -7,7 +7,10 @@ import {
   TooltipTrigger,
 } from '@/components/ui/tooltip'
 import { NavLink, Link } from 'react-router'
-import { OIDC_GOOGLE_LOGOUT_ENDPOINT } from '@/constants/api'
+import {
+  OIDC_GOOGLE_LOGOUT_ENDPOINT,
+  USER_PROFILE_ENDPOINT,
+} from '@/constants/api'
 import {
   DropdownMenu,
   DropdownMenuTrigger,
@@ -16,13 +19,11 @@ import {
   DropdownMenuSeparator,
   DropdownMenuLabel,
 } from '@/components/ui/dropdown-menu'
+import type { UserInfo } from '@/types'
 
 // Props for the header
 export type AppHeaderProps = {
-  user?: {
-    name?: string
-    email?: string
-  }
+  userInfo: UserInfo | null
 }
 
 // Simple inline SVG logo (placeholder)
@@ -87,29 +88,13 @@ const getCookie = (cookieName: string): string | undefined => {
   }
   return undefined
 }
-// const selector = (store: WholeStoreState) => {
-//   return {
-//     setIsLogin: store.setIsLogin,
-//     setAuthStatus: store.setAuthStatus,
-//     setProjects: store.setProjects,
-//     setCurrentPjId: store.setCurrentPjId,
-//     setKanbanIndex: store.setKanbanIndex,
-//     setKanbanColumns: store.setKanbanColumns,
-//   }
-// }
 
-export default function AppHeader({ user }: AppHeaderProps) {
-  // const {
-  //   setIsLogin,
-  //   setAuthStatus,
-  //   setProjects,
-  //   setCurrentPjId,
-  //   setKanbanColumns,
-  //   setKanbanIndex,
-  // } = useWholeStore(useShallow(selector))
+export default function AppHeader({ userInfo }: AppHeaderProps) {
+  const userName = userInfo ? userInfo.displayName : 'guest'
+  const userEmail = userInfo ? userInfo.email : ''
+  // const userLabel = user?.name || user?.email || 'ゲスト'
 
-  const userLabel = user?.name || user?.email || 'ゲスト'
-
+  // ログアウト用ハンドラ
   const handleLogout = async () => {
     try {
       const csrfToken = getCookie('csrf_token')
@@ -136,8 +121,38 @@ export default function AppHeader({ user }: AppHeaderProps) {
       window.location.href = '/login'
     } catch (err) {
       console.error(err)
-      // alert("ログアウトに失敗しました。再度お試しください。")
+      alert('ログアウトに失敗しました。再度お試しください。')
       // window.location.replace("/login")
+    }
+  }
+
+  // ユーザー削除用ハンドラ
+  const handleDeleteUser = async () => {
+    try {
+      if (
+        !confirm('本当にアカウントを削除しますか？この操作は取り消せません。')
+      )
+        return
+
+      const csrfToken = getCookie('csrf_token')
+      if (!csrfToken) throw new Error('csrf_token not found')
+
+      const res = await fetch(`${USER_PROFILE_ENDPOINT}`, {
+        method: 'DELETE',
+        credentials: 'include',
+        headers: { 'X-CSRF-Token': csrfToken },
+      })
+
+      if (res.status !== 204) {
+        throw new Error(
+          `User delete failed: ${res.status}, ${await res.text()}`
+        )
+      }
+
+      window.location.href = '/login'
+    } catch (err) {
+      console.error(err)
+      alert('ユーザー削除に失敗しました。再度お試しください。')
     }
   }
 
@@ -180,35 +195,35 @@ export default function AppHeader({ user }: AppHeaderProps) {
             {/* User dropdown (click the name) */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                {/* span だとフォーカスしづらいので button に */}
                 <button
                   type="button"
-                  className="text-muted-foreground hover:text-foreground rounded-md px-2 py-1 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+                  className="text-muted-foreground hover:text-foreground rounded-md px-3 py-1.5 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
                   aria-label="ユーザーメニュー"
                 >
-                  {userLabel}
+                  {userName}
                 </button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-52">
-                <DropdownMenuLabel className="truncate">
-                  {userLabel}
+              <DropdownMenuContent align="end" className="w-56">
+                <DropdownMenuLabel className="flex flex-col items-start px-3 py-2">
+                  <span className="text-foreground truncate font-medium">
+                    {userName}
+                  </span>
+                  <span className="text-muted-foreground truncate text-xs">
+                    {userEmail}
+                  </span>
                 </DropdownMenuLabel>
                 <DropdownMenuSeparator />
-
-                {/* ▼ 将来用の「設定」：いったんコメントアウトだけ残す */}
-                {/*
-                <DropdownMenuItem asChild>
-                  <Link to="/settings" className="flex items-center gap-2">
-                    <Settings className="h-4 w-4" />
-                    設定
-                  </Link>
-                </DropdownMenuItem>
-                <DropdownMenuSeparator />
-                */}
 
                 <DropdownMenuItem onClick={handleLogout}>
                   <LogOut className="mr-2 h-4 w-4" />
                   ログアウト
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  onClick={handleDeleteUser}
+                  className="text-red-600 hover:text-red-700"
+                >
+                  <Trash2 className="mr-2 h-4 w-4" />
+                  アカウント削除
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>

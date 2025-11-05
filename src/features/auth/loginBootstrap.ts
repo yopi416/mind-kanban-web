@@ -1,6 +1,6 @@
 // このコードは、app.tsxにて、/app配下アクセス時に挟み込まれる
 
-import { HEALTHZ_ENDPOINT } from '@/constants/api'
+import { USER_PROFILE_ENDPOINT } from '@/constants/api'
 import { useWholeStore } from '@/state/store'
 import type {
   KanbanColumns,
@@ -18,6 +18,9 @@ const selector = (store: WholeStoreState) => {
     setIsLogin: store.setIsLogin,
     authStatus: store.authStatus,
     setAuthStatus: store.setAuthStatus,
+
+    setUserInfo: store.setUserInfo,
+
     setProjects: store.setProjects,
     setCurrentPjId: store.setCurrentPjId,
     setKanbanIndex: store.setKanbanIndex,
@@ -27,10 +30,16 @@ const selector = (store: WholeStoreState) => {
 
 export function useLoginBootstrap() {
   const {
+    // ログイン状態管理
     isLogin,
     setIsLogin,
     authStatus,
     setAuthStatus,
+
+    // ログインユーザー情報管理
+    setUserInfo,
+
+    // マインドマップ、カンバンボード状態の管理
     setProjects,
     setCurrentPjId,
     setKanbanColumns,
@@ -83,12 +92,22 @@ export function useLoginBootstrap() {
 
     ;(async () => {
       try {
-        // const res = await fetch(`${USER_PROFILE_ENDPOINT}`, { credentials: 'include' })
-        const res = await fetch(`${HEALTHZ_ENDPOINT}`, {
+        const res = await fetch(`${USER_PROFILE_ENDPOINT}`, {
           credentials: 'include',
         })
+        // const res = await fetch(`${HEALTHZ_ENDPOINT}`, {
+        //   credentials: 'include',
+        // })
         console.log(res)
         if (!res.ok) throw new Error('unauthorized')
+
+        const userInfo = await res.json()
+
+        setUserInfo({
+          displayName: userInfo.displayName ?? '',
+          email: userInfo.email ?? '',
+        })
+
         initStore()
 
         // const user = await res.json()

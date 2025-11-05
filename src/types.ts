@@ -1,5 +1,11 @@
 import type { Node, Edge, OnNodesChange, OnEdgesChange } from '@xyflow/react'
 
+// ユーザー情報
+export type UserInfo = {
+  displayName: string
+  email: string
+}
+
 export type WholeStoreState = MindMapSlice & KanbanSlice & OrchestratorSlice
 
 // kanbanボードの子タスクから、孫タスク以降を検索する際に使用(CardSubtasks.tsx)
@@ -72,13 +78,17 @@ export type EditSnapshot = {
 ---------------------------*/
 
 export type MindMapSlice = {
-  /* 認証管理（開発用） */
+  /* 認証管理 */
   isLogin: boolean
   setIsLogin: (isLogin: boolean) => void
   authStatus: 'unknown' | 'authenticated' | 'unauthenticated'
   setAuthStatus: (
     status: 'unknown' | 'authenticated' | 'unauthenticated'
   ) => void
+
+  /* ユーザー情報 */
+  userInfo: UserInfo | null
+  setUserInfo: (userInfo: UserInfo | null) => void
 
   /* 複数PJ管理 */
   projects: Projects
