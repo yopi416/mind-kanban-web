@@ -178,7 +178,24 @@ export type KanbanColumnName = 'backlog' | 'todo' | 'doing' | 'done'
 // ex: { backlog: [{id1, pj1}, [id2, pj2]], todo: [{id3, pj1}],,,,, }
 export type KanbanColumns = Record<KanbanColumnName, KanbanCardRef[]>
 
+// バックエンドではJSONで保存するためstring[]だが、フロントエンドではSetを使う
+export type KanbanIndexJSON = Record<string, string[]>
 export type KanbanIndex = Map<string, Set<string>> // pjId -> nodeId Set
+
+/* フロント・バックエンド間連携（） */
+// MinkanData + 楽観ロック用version をやりとり
+
+export type MinkanData = {
+  projects: Projects
+  currentPjId: string
+  kanbanIndex: KanbanIndexJSON
+  kanbanColumns: KanbanColumns
+}
+
+export type MinkanResponse = {
+  minkan: MinkanData
+  version: number //楽観ロック用
+}
 
 /* Kanbanボード実体（） */
 export type KanbanCardView = {
@@ -301,4 +318,8 @@ export type OrchestratorSlice = {
 
   undo: () => void
   redo: () => void
+
+  // 楽観ロック用
+  lockVersion: number
+  setLockVersion: (v: number) => void
 }
