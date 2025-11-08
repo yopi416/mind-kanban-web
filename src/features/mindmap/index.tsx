@@ -8,15 +8,7 @@ import {
 
 import { useCallback, useEffect } from 'react'
 import { useShallow } from 'zustand/shallow'
-import type {
-  WholeStoreState,
-  KanbanColumnName,
-  KanbanCardRef,
-  MinkanPutResponse,
-  MinkanData,
-  KanbanIndexJSON,
-  MinkanPutRequest,
-} from '@/types'
+import type { WholeStoreState, KanbanColumnName, KanbanCardRef } from '@/types'
 import CustomNode from './components/CustomNode'
 import { getLayoutedNodes } from './utils/dagreLayout'
 
@@ -32,7 +24,7 @@ import {
 import '@xyflow/react/dist/style.css'
 import { ROOT_NODE_ID } from './constants'
 import { Button } from '@/components/ui/button'
-import { FaUndoAlt, FaRedoAlt, FaSave } from 'react-icons/fa'
+import { FaUndoAlt, FaRedoAlt } from 'react-icons/fa'
 
 import { useWholeStore } from '@/state/store'
 import {
@@ -41,10 +33,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '@radix-ui/react-tooltip'
-import { MINKAN_ENDPOINT } from '@/constants/api'
-import { getCookie } from '../auth/utils/cookieUtils'
-import { toast } from 'sonner'
-import { serializeKanbanIndex } from './utils/kanbanIndexSerializer'
+import { saveMinkanData } from '../shared/minkanUtils'
 
 const selector = (store: WholeStoreState) => {
   const currentPj = store.projects[store.currentPjId]
@@ -209,7 +198,6 @@ function createShortcuts(
 
 function MindMap() {
   const {
-    setLockVersion,
     nodes,
     edges,
     onNodesChange,
@@ -225,91 +213,6 @@ function MindMap() {
     canUndo,
     canRedo,
   } = useWholeStore(useShallow(selector))
-
-  // マインドマップ・カンバンの状態をバックエンドに保存
-  const handleSave = useCallback(() => {
-    ;(async () => {
-      try {
-        // csrfTokenの取得
-        const csrfToken = getCookie('csrf_token')
-        if (!csrfToken) {
-          throw new Error('csrf_token not found')
-        }
-
-        // reqボディのデータをstoreから取得
-        const {
-          projects,
-          currentPjId,
-          kanbanIndex,
-          kanbanColumns,
-          lockVersion,
-        } = useWholeStore.getState()
-        const kanbanIndexJSON: KanbanIndexJSON =
-          serializeKanbanIndex(kanbanIndex)
-
-        // reqボディのオブジェクト作成
-        const minkanData: MinkanData = {
-          projects: structuredClone(projects), //ネストが深いので一応deepCopy
-          currentPjId,
-          kanbanIndex: kanbanIndexJSON,
-          kanbanColumns: structuredClone(kanbanColumns),
-        }
-
-        const reqBodyObj: MinkanPutRequest = {
-          minkan: minkanData,
-          version: lockVersion,
-        }
-
-        // /minkanエンドポイントにPUT
-        const resMinkan = await fetch(`${MINKAN_ENDPOINT}`, {
-          method: 'PUT',
-          credentials: 'include',
-          headers: {
-            'Content-Type': 'application/json',
-            'X-CSRF-Token': csrfToken,
-          },
-          body: JSON.stringify(reqBodyObj),
-        })
-
-        if (resMinkan.status === 409) {
-          toast.error('他の環境(端末・ブラウザなど)で内容が更新されています', {
-            description:
-              'ブラウザを更新して、最新の状態を読み込み直してください。',
-            duration: 3000,
-          })
-
-          const errorBody = await resMinkan.text()
-          throw new Error(
-            `failed to save data: ${resMinkan.status}, ${errorBody}`
-          )
-        }
-
-        if (resMinkan.status !== 200) {
-          toast.error('保存に失敗しました', {
-            description: '',
-            duration: 2300,
-          })
-          const errorBody = await resMinkan.text()
-          throw new Error(
-            `failed to save data: ${resMinkan.status}, ${errorBody}`
-          )
-        }
-
-        const { version: nextLockVersion }: MinkanPutResponse =
-          await resMinkan.json()
-
-        // 楽観ロック用versionをset
-        setLockVersion(nextLockVersion)
-
-        toast.success('保存しました', {
-          description: '最新の内容がサーバーに保存されました。',
-          duration: 2000, // 2s
-        })
-      } catch (err) {
-        console.warn('保存に失敗しました', err)
-      }
-    })()
-  }, [setLockVersion])
 
   // ノードの付け替え（ドラッグ開始時）の処理
   const onConnectStart: OnConnectStart = useCallback(
@@ -415,7 +318,12 @@ function MindMap() {
     }
   }, [nodes, edges, setNodes])
 
-  // Focusノードを矢印キーで移動
+  // マインドマップ・カンバンの状態をバックエンドに保存
+  const handleSave = useCallback(() => {
+    saveMinkanData()
+  }, [])
+
+  // ショートカットの設定
   useEffect(() => {
     const isComposing = (e: KeyboardEvent) => e.isComposing
 
@@ -512,10 +420,10 @@ function MindMap() {
           </Tooltip>
 
           {/* 区切り線 */}
-          <div className="bg-border mx-1 my-0.5 h-6 w-px" role="separator" />
+          {/* <div className="bg-border mx-1 my-0.5 h-6 w-px" role="separator" /> */}
 
           {/* 保存ボタン */}
-          <Tooltip>
+          {/* <Tooltip>
             <TooltipTrigger asChild>
               <Button
                 size="sm"
@@ -528,7 +436,7 @@ function MindMap() {
               </Button>
             </TooltipTrigger>
             <TooltipContent>変更を保存（Ctrl+S）</TooltipContent>
-          </Tooltip>
+          </Tooltip> */}
         </TooltipProvider>
       </div>
       {/* <Button onClick={undo} disabled={!canUndo} size="sm">

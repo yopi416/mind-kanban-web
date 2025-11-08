@@ -12,8 +12,10 @@ import type {
 } from '@/types'
 import { useEffect } from 'react'
 import { useShallow } from 'zustand/shallow'
-import { deserializeKanbanIndex } from '../mindmap/utils/kanbanIndexSerializer'
-import { validateMinkanData } from './utils/validateUtils'
+import {
+  deserializeKanbanIndex,
+  validateMinkanData,
+} from '../shared/minkanUtils'
 // import { initialPjs } from '../mindmap/mockInitialElements'
 
 const selector = (store: WholeStoreState) => {
