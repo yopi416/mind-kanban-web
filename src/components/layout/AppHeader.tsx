@@ -23,6 +23,9 @@ import type { UserInfo } from '@/types'
 import { getCookie } from '@/features/shared/cookieUtils'
 import { saveMinkanData } from '@/features/shared/minkanUtils'
 
+import { useState } from 'react'
+import { HelpSidePanel } from './components/HelpSidePanel'
+
 // Props for the header
 export type AppHeaderProps = {
   userInfo: UserInfo | null
@@ -73,6 +76,9 @@ const NavItem: React.FC<{ to: string; label: string }> = ({ to, label }) => (
 )
 
 export default function AppHeader({ userInfo }: AppHeaderProps) {
+  // ヘルプサイドバー表示管理用
+  const [helpOpen, setHelpOpen] = useState(false)
+
   const userName = userInfo ? userInfo.displayName : 'guest'
   const userEmail = userInfo ? userInfo.email : ''
   // const userLabel = user?.name || user?.email || 'ゲスト'
@@ -140,94 +146,92 @@ export default function AppHeader({ userInfo }: AppHeaderProps) {
   }
 
   return (
-    <header className="bg-background/80 supports-[backdrop-filter]:bg-background/60 sticky top-0 z-40 w-full border-b backdrop-blur">
-      <div className="flex h-14 w-full items-center justify-between gap-3 px-3 sm:h-16 sm:px-6 lg:px-8 xl:px-10 2xl:px-12">
-        {/* Left: Logo */}
-        <Link to="/" className="shrink-0" aria-label="Home">
-          <Logo />
-        </Link>
+    <>
+      <header className="bg-background/80 supports-[backdrop-filter]:bg-background/60 sticky top-0 z-40 w-full border-b backdrop-blur">
+        <div className="flex h-14 w-full items-center justify-between gap-3 px-3 sm:h-16 sm:px-6 lg:px-8 xl:px-10 2xl:px-12">
+          {/* Left: Logo */}
+          <Link to="/" className="shrink-0" aria-label="Home">
+            <Logo />
+          </Link>
 
-        {/* Middle: nav links (React Router) */}
-        <nav className="ml-2 hidden items-center gap-1 sm:flex">
-          <NavItem to="/app/mindmap" label="マインドマップ" />
-          <NavItem to="/app/kanban" label="カンバンボード" />
-          {/* <NavItem to="/guide" label="使い方" /> */}
-        </nav>
+          {/* Middle: nav links (React Router) */}
+          <nav className="ml-2 hidden items-center gap-1 sm:flex">
+            <NavItem to="/app/mindmap" label="マインドマップ" />
+            <NavItem to="/app/kanban" label="カンバンボード" />
+            {/* <NavItem to="/guide" label="使い方" /> */}
+          </nav>
 
-        {/* Fill space */}
-        <div className="flex-1" />
+          {/* Fill space */}
+          <div className="flex-1" />
 
-        {/* Right: help + user text */}
-        <TooltipProvider>
-          <div className="flex items-center gap-3">
-            {/* Save Button */}
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <button
-                  type="button"
-                  onClick={saveMinkanData}
-                  className="flex items-center gap-1 rounded-md bg-blue-100 px-2 py-1.5 text-sm font-medium text-blue-700 transition hover:bg-blue-200"
-                >
-                  <Save className="h-4 w-4" />
-                  保存
-                </button>
-              </TooltipTrigger>
-              <TooltipContent>現在の状態を保存</TooltipContent>
-            </Tooltip>
+          {/* Right: help + user text */}
+          <TooltipProvider>
+            <div className="flex items-center gap-3">
+              {/* Save Button */}
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button
+                    type="button"
+                    onClick={saveMinkanData}
+                    className="flex items-center gap-1 rounded-md bg-blue-100 px-2 py-1.5 text-sm font-medium text-blue-700 transition hover:bg-blue-200"
+                  >
+                    <Save className="h-4 w-4" />
+                    保存
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent>現在の状態を保存</TooltipContent>
+              </Tooltip>
 
-            {/* Help icon */}
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Link
-                  //   to="/help"
-                  to="/"
-                  aria-label="ヘルプ"
-                  className="text-muted-foreground hover:bg-accent hover:text-foreground rounded-full p-2 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
-                >
-                  <HelpCircle className="h-5 w-5" />
-                </Link>
-              </TooltipTrigger>
-              <TooltipContent>ヘルプ</TooltipContent>
-            </Tooltip>
+              {/* Help icon */}
+              <button
+                aria-label="ヘルプ"
+                onClick={() => setHelpOpen(true)}
+                className="hover:bg-accent rounded-full p-2"
+              >
+                <HelpCircle className="h-5 w-5" />
+              </button>
 
-            {/* User dropdown (click the name) */}
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <button
-                  type="button"
-                  className="text-muted-foreground hover:text-foreground rounded-md px-3 py-1.5 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
-                  aria-label="ユーザーメニュー"
-                >
-                  {userName}
-                </button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-56">
-                <DropdownMenuLabel className="flex flex-col items-start px-3 py-2">
-                  <span className="text-foreground truncate font-medium">
+              {/* User dropdown (click the name) */}
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <button
+                    type="button"
+                    className="text-muted-foreground hover:text-foreground rounded-md px-3 py-1.5 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+                    aria-label="ユーザーメニュー"
+                  >
                     {userName}
-                  </span>
-                  <span className="text-muted-foreground truncate text-xs">
-                    {userEmail}
-                  </span>
-                </DropdownMenuLabel>
-                <DropdownMenuSeparator />
+                  </button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-56">
+                  <DropdownMenuLabel className="flex flex-col items-start px-3 py-2">
+                    <span className="text-foreground truncate font-medium">
+                      {userName}
+                    </span>
+                    <span className="text-muted-foreground truncate text-xs">
+                      {userEmail}
+                    </span>
+                  </DropdownMenuLabel>
+                  <DropdownMenuSeparator />
 
-                <DropdownMenuItem onClick={handleLogout}>
-                  <LogOut className="mr-2 h-4 w-4" />
-                  ログアウト
-                </DropdownMenuItem>
-                <DropdownMenuItem
-                  onClick={handleDeleteUser}
-                  className="text-red-600 hover:text-red-700"
-                >
-                  <Trash2 className="mr-2 h-4 w-4" />
-                  アカウント削除
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </div>
-        </TooltipProvider>
-      </div>
-    </header>
+                  <DropdownMenuItem onClick={handleLogout}>
+                    <LogOut className="mr-2 h-4 w-4" />
+                    ログアウト
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    onClick={handleDeleteUser}
+                    className="text-red-600 hover:text-red-700"
+                  >
+                    <Trash2 className="mr-2 h-4 w-4" />
+                    アカウント削除
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
+          </TooltipProvider>
+        </div>
+      </header>
+
+      <HelpSidePanel open={helpOpen} onClose={() => setHelpOpen(false)} />
+    </>
   )
 }
