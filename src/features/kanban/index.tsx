@@ -6,7 +6,7 @@ import type {
   UniqueIdentifier,
 } from '@dnd-kit/core'
 import { arrayMove } from '@dnd-kit/sortable'
-import { useRef } from 'react'
+import { useCallback, useEffect, useRef } from 'react'
 
 import type {
   KanbanCardRef,
@@ -18,6 +18,7 @@ import { KanbanColumn } from './components/KanbanColumn'
 import { useWholeStore } from '@/state/store'
 import { useShallow } from 'zustand/shallow'
 import { OverlayCard } from './components/OverlayCard'
+import { saveMinkanData } from '../shared/minkanUtils'
 
 const selector = (store: WholeStoreState) => {
   return {
@@ -27,6 +28,43 @@ const selector = (store: WholeStoreState) => {
 }
 
 function Kanban() {
+  // マインドマップ・カンバンの状態をバックエンドに保存
+  const handleSave = useCallback(() => {
+    saveMinkanData()
+  }, [])
+
+  useEffect(() => {
+    const isComposing = (e: KeyboardEvent) => e.isComposing
+
+    const handleKey = (e: KeyboardEvent) => {
+      if (isComposing(e)) return
+
+      // サイドバーのrename中はショートカットを無効化
+      const target = e.target as HTMLElement | null
+      if (
+        target &&
+        (target.tagName === 'INPUT' ||
+          target.tagName === 'TEXTAREA' ||
+          (target as HTMLElement).isContentEditable ||
+          target.closest('[role="textbox"]'))
+      ) {
+        return
+      }
+
+      const key = e.key.length === 1 ? e.key.toLowerCase() : e.key
+
+      // 保存: Ctrl+S OR Cmd+S
+      if ((e.ctrlKey && key === 's') || (e.metaKey && key === 's')) {
+        e.preventDefault()
+        handleSave()
+        return
+      }
+    }
+
+    window.addEventListener('keydown', handleKey)
+    return () => window.removeEventListener('keydown', handleKey)
+  }, [handleSave])
+
   const { setKanbanColumns, setActiveCardRef } = useWholeStore(
     useShallow(selector)
   )
@@ -202,8 +240,6 @@ function Kanban() {
     // setStateが行われるのを1フレームに1回とする
     movedInFrameRef.current = true // 次フレームまでは、handleDragOverを即returnする
     requestAnimationFrame(() => (movedInFrameRef.current = false))
-
-    console.log('onDragOver!!!')
 
     setKanbanColumns(nextCols)
   }

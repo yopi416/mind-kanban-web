@@ -149,8 +149,6 @@ export const createOrchestratorSlice: StateCreator<
       /*-------------------------------
                 まとめてセット
         ------------------------------- */
-      console.log(nextCols)
-      console.log(nextIndex)
 
       return {
         projects: newPjs,
@@ -1035,6 +1033,12 @@ export const createOrchestratorSlice: StateCreator<
         kanbanIndex: newKanbanIndex,
         kanbanColumns: newKanbanCols,
       }
+    })
+  },
+  lockVersion: 0,
+  setLockVersion: (v: number) => {
+    set({
+      lockVersion: v,
     })
   },
 })

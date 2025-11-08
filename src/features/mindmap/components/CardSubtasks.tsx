@@ -60,21 +60,20 @@ export const CardSubtasks = ({ card }: Props) => {
   return (
     <div className="space-y-1">
       {/* パンくず */}
-      <div className="text-muted-foreground flex items-center gap-1 text-xs">
+      <div className="text-muted-foreground/80 flex items-center gap-1 text-[10px] leading-tight">
         <span
-          className="bg-muted max-w-[8rem] truncate rounded-full px-2 py-0.5"
+          className="bg-muted max-w-[7rem] truncate rounded-full px-1.5 py-0.5"
           title={targetPjName}
         >
           {targetPjName}
         </span>
 
-        <span> ... ›</span>
+        <span>›</span>
 
         {grandParentNode && (
           <>
-            <span></span>
             <span
-              className="max-w-[10rem] truncate"
+              className="max-w-[7rem] truncate"
               title={grandParentNode.data.label}
             >
               {grandParentNode.data.label}
@@ -84,20 +83,14 @@ export const CardSubtasks = ({ card }: Props) => {
         )}
 
         {parentNode && (
-          <>
-            <span></span>
-            <span
-              className="max-w-[10rem] truncate"
-              title={parentNode.data.label}
-            >
-              {parentNode.data.label}
-            </span>
-          </>
+          <span className="max-w-[7rem] truncate" title={parentNode.data.label}>
+            {parentNode.data.label}
+          </span>
         )}
       </div>
       <div className="min-w-0 pr-2 pt-0.5">
         <span
-          className="text-foreground block max-w-[94%] truncate font-semibold"
+          className="text-foreground/80 block max-w-[94%] truncate text-sm"
           title={currentNode.data.label}
         >
           {currentNode.data.label}

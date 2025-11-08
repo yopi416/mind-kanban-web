@@ -18,14 +18,11 @@ export function addIndexSubtree(
   pjId: string,
   idSetToAdd: Set<string>
 ): KanbanIndex {
-  console.log(idx)
   const nextIndex = new Map(idx)
 
   const oldSet = nextIndex.get(pjId) ?? new Set()
   const newSet = new Set([...oldSet, ...idSetToAdd]) // Immutablityを保ちつつ子ノードIDを追加
   nextIndex.set(pjId, newSet)
-
-  console.log(nextIndex)
 
   return nextIndex
 }

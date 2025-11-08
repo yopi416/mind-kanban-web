@@ -14,6 +14,7 @@ import type { WholeStoreState } from '@/types'
 import { useWholeStore } from '@/state/store'
 import { useShallow } from 'zustand/shallow'
 import { ClearHistoryOnRoute } from './components/ClearHistoryOnRoute'
+import { Toaster } from './components/ui/sonner'
 
 const selector = (store: WholeStoreState) => {
   return {
@@ -29,11 +30,10 @@ function AuthGate() {
   // - 初回ログイン後のログインチェック前 = unknown
   // - 初回ログイン後のログインチェック後 = authed/ unauthed
   if (authStatus === 'unauthenticated') {
-    console.log('Login していないのでリダイレクト')
+    console.log('未Loginのためloginページに移動します')
     return <Navigate to="login" replace />
   }
 
-  console.log('試験用なので常に認証成功')
   return <Outlet /> // ← 一旦は常に通す
 }
 
@@ -58,6 +58,9 @@ function App() {
           {/* 404ちゃんと作る */}
         </Routes>
       </BrowserRouter>
+
+      {/*ここに Toaster を置けばアプリ全体で toast が使える */}
+      <Toaster richColors closeButton />
     </>
   )
 }

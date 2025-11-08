@@ -25,6 +25,7 @@ import '@xyflow/react/dist/style.css'
 import { ROOT_NODE_ID } from './constants'
 import { Button } from '@/components/ui/button'
 import { FaUndoAlt, FaRedoAlt } from 'react-icons/fa'
+
 import { useWholeStore } from '@/state/store'
 import {
   Tooltip,
@@ -32,6 +33,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '@radix-ui/react-tooltip'
+import { saveMinkanData } from '../shared/minkanUtils'
 
 const selector = (store: WholeStoreState) => {
   const currentPj = store.projects[store.currentPjId]
@@ -45,6 +47,7 @@ const selector = (store: WholeStoreState) => {
   const canRedo = (currentHistory?.redoStack.length ?? 0) > 0
 
   return {
+    setLockVersion: store.setLockVersion,
     nodes: currentPj?.nodes ?? [],
     edges: currentPj?.edges ?? [],
     onNodesChange: store.onNodesChange,
@@ -315,7 +318,12 @@ function MindMap() {
     }
   }, [nodes, edges, setNodes])
 
-  // Focusノードを矢印キーで移動
+  // マインドマップ・カンバンの状態をバックエンドに保存
+  const handleSave = useCallback(() => {
+    saveMinkanData()
+  }, [])
+
+  // ショートカットの設定
   useEffect(() => {
     const isComposing = (e: KeyboardEvent) => e.isComposing
 
@@ -335,6 +343,7 @@ function MindMap() {
       }
 
       const state = useWholeStore.getState()
+
       // --- ① Undo/Redo をまずグローバルに処理 ---
       const key = e.key.length === 1 ? e.key.toLowerCase() : e.key
 
@@ -355,6 +364,13 @@ function MindMap() {
         return
       }
 
+      // 保存: Ctrl+S OR Cmd+S
+      if ((e.ctrlKey && key === 's') || (e.metaKey && key === 's')) {
+        e.preventDefault()
+        handleSave()
+        return
+      }
+
       // --- ② 残りのノード操作ショートカット ---
       const shortcuts = createShortcuts(state)
       const fn = shortcuts[key] // ← 正規化した key を使う
@@ -363,14 +379,15 @@ function MindMap() {
 
     window.addEventListener('keydown', handleKey)
     return () => window.removeEventListener('keydown', handleKey)
-  }, [])
+  }, [handleSave])
 
   return (
     // <div style={{ height: '100%' }}>
     <div className="relative h-full w-full">
       {/* Undo/Redo toolbar */}
-      <div className="bg-background/70 absolute left-3 top-3 z-10 flex items-center gap-1 rounded-xl border px-1.5 py-1 shadow-sm backdrop-blur">
+      <div className="bg-background/70 absolute left-3 top-3 z-20 flex items-center gap-1 rounded-xl border px-1.5 py-1 shadow-sm backdrop-blur">
         <TooltipProvider>
+          {/* Undo */}
           <Tooltip>
             <TooltipTrigger asChild>
               <Button
@@ -386,6 +403,7 @@ function MindMap() {
             <TooltipContent>戻る（Ctrl+Z）</TooltipContent>
           </Tooltip>
 
+          {/* Redo */}
           <Tooltip>
             <TooltipTrigger asChild>
               <Button
@@ -400,6 +418,25 @@ function MindMap() {
             </TooltipTrigger>
             <TooltipContent>進む（Ctrl+Shift+Z）</TooltipContent>
           </Tooltip>
+
+          {/* 区切り線 */}
+          {/* <div className="bg-border mx-1 my-0.5 h-6 w-px" role="separator" /> */}
+
+          {/* 保存ボタン */}
+          {/* <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                size="sm"
+                onClick={handleSave}
+                aria-label="保存 (Ctrl+S)"
+                className="bg-blue-100 px-2 text-blue-700 hover:bg-blue-200"
+              >
+                <FaSave size={14} className="mr-1" />
+                保存
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>変更を保存（Ctrl+S）</TooltipContent>
+          </Tooltip> */}
         </TooltipProvider>
       </div>
       {/* <Button onClick={undo} disabled={!canUndo} size="sm">

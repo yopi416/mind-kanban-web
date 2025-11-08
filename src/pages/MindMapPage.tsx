@@ -10,7 +10,7 @@ function MindMapPage() {
       {/* <TestSomething /> */}
       {/* <KanbanPage /> */}
 
-      <div className="flex h-screen">
+      <div className="flex h-full w-full overflow-hidden">
         <Sidebar />
         <div className="min-w-0 flex-1 overflow-hidden">
           <MindMap />

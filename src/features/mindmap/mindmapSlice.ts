@@ -7,6 +7,7 @@ import {
   type NodeChange,
 } from '@xyflow/react'
 import type {
+  UserInfo,
   NodeComment,
   StackItem,
   HistoryByPj,
@@ -45,7 +46,7 @@ export const createMindMapSlice: StateCreator<
   // nodes: initialNodes,
   // edges: initialEdges,
 
-  //開発時における認証管理用
+  //認証管理用
   isLogin: false,
   setIsLogin: (isLogin: boolean) => {
     set({ isLogin })
@@ -54,6 +55,16 @@ export const createMindMapSlice: StateCreator<
   setAuthStatus: (authStatus) => {
     set({ authStatus })
   },
+
+  //ユーザー情報管理
+  userInfo: null,
+  setUserInfo: (userInfo: UserInfo | null) => {
+    set({
+      userInfo,
+    })
+  },
+
+  // マインドマップ
   projects: {
     pj1: {
       id: 'pj1',
