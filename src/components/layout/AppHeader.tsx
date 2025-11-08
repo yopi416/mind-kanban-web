@@ -1,5 +1,5 @@
 // import * as React from "react";
-import { HelpCircle, LogOut, Trash2 } from 'lucide-react'
+import { HelpCircle, LogOut, Save, Trash2 } from 'lucide-react'
 import {
   Tooltip,
   TooltipContent,
@@ -20,6 +20,8 @@ import {
   DropdownMenuLabel,
 } from '@/components/ui/dropdown-menu'
 import type { UserInfo } from '@/types'
+import { getCookie } from '@/features/shared/cookieUtils'
+import { saveMinkanData } from '@/features/shared/minkanUtils'
 
 // Props for the header
 export type AppHeaderProps = {
@@ -69,25 +71,6 @@ const NavItem: React.FC<{ to: string; label: string }> = ({ to, label }) => (
     {label}
   </NavLink>
 )
-
-const getCookie = (cookieName: string): string | undefined => {
-  const cookieArray = document.cookie.split(';')
-  for (const raw of cookieArray) {
-    const cookie = raw.trim()
-    if (cookie.startsWith(`${cookieName}=`)) {
-      // 最初の '=' 以降をすべて値として扱う
-      // - =が含まれるケースをケアするため、cookieNameの文字数で区切る
-      const targetCookieValue = cookie.slice(cookieName.length + 1)
-      try {
-        // URIエンコードされている場合をケア
-        return decodeURIComponent(targetCookieValue)
-      } catch {
-        return targetCookieValue
-      }
-    }
-  }
-  return undefined
-}
 
 export default function AppHeader({ userInfo }: AppHeaderProps) {
   const userName = userInfo ? userInfo.displayName : 'guest'
@@ -177,6 +160,21 @@ export default function AppHeader({ userInfo }: AppHeaderProps) {
         {/* Right: help + user text */}
         <TooltipProvider>
           <div className="flex items-center gap-3">
+            {/* Save Button */}
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button
+                  type="button"
+                  onClick={saveMinkanData}
+                  className="flex items-center gap-1 rounded-md bg-blue-100 px-2 py-1.5 text-sm font-medium text-blue-700 transition hover:bg-blue-200"
+                >
+                  <Save className="h-4 w-4" />
+                  保存
+                </button>
+              </TooltipTrigger>
+              <TooltipContent>現在の状態を保存</TooltipContent>
+            </Tooltip>
+
             {/* Help icon */}
             <Tooltip>
               <TooltipTrigger asChild>

@@ -1037,4 +1037,10 @@ export const createOrchestratorSlice: StateCreator<
       }
     })
   },
+  lockVersion: 0,
+  setLockVersion: (v: number) => {
+    set({
+      lockVersion: v,
+    })
+  },
 })

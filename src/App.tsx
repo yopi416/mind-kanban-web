@@ -14,6 +14,7 @@ import type { WholeStoreState } from '@/types'
 import { useWholeStore } from '@/state/store'
 import { useShallow } from 'zustand/shallow'
 import { ClearHistoryOnRoute } from './components/ClearHistoryOnRoute'
+import { Toaster } from './components/ui/sonner'
 
 const selector = (store: WholeStoreState) => {
   return {
@@ -58,6 +59,9 @@ function App() {
           {/* 404ちゃんと作る */}
         </Routes>
       </BrowserRouter>
+
+      {/*ここに Toaster を置けばアプリ全体で toast が使える */}
+      <Toaster richColors closeButton />
     </>
   )
 }
