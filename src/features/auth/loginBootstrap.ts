@@ -5,14 +5,15 @@ import { useWholeStore } from '@/state/store'
 import type {
   KanbanColumns,
   KanbanIndex,
-  KanbanIndexJSON,
   MinkanData,
-  MinkanResponse,
+  MinkanGetResponse,
   Projects,
   WholeStoreState,
 } from '@/types'
 import { useEffect } from 'react'
 import { useShallow } from 'zustand/shallow'
+import { deserializeKanbanIndex } from '../mindmap/utils/kanbanIndexSerializer'
+import { validateMinkanData } from './utils/validateUtils'
 // import { initialPjs } from '../mindmap/mockInitialElements'
 
 const selector = (store: WholeStoreState) => {
@@ -31,20 +32,6 @@ const selector = (store: WholeStoreState) => {
 
     setLockVersion: store.setLockVersion,
   }
-}
-
-// JSONのKanbanIndexを実際の型に変換
-// Record<string, string[]> ⇒ Map<string, Set<string>>に変換
-// JSONでは、setを表現できないため
-function parseKanbanIndex(json: KanbanIndexJSON): KanbanIndex {
-  const map: KanbanIndex = new Map()
-
-  for (const pjId of Object.keys(json)) {
-    const nodeIds = json[pjId]
-    map.set(pjId, new Set(nodeIds))
-  }
-
-  return map
 }
 
 export function useLoginBootstrap() {
@@ -79,54 +66,17 @@ export function useLoginBootstrap() {
     ) => {
       console.log('init store from backend')
 
-      setProjects(initialProjects)
+      setProjects(structuredClone(initialProjects))
       setCurrentPjId(initialCurrentPjId)
-      setKanbanIndex(initialKanbanIndex)
-      setKanbanColumns(initialKanbanColumns)
+
+      const clonedKanbanIndex = new Map(
+        [...initialKanbanIndex.entries()].map(([k, v]) => [k, new Set(v)])
+      )
+      setKanbanIndex(clonedKanbanIndex)
+      setKanbanColumns(structuredClone(initialKanbanColumns))
 
       console.log('init finished')
     }
-
-    // const initStore = () => {
-    //   console.log('dummy init')
-
-    //   // マインドマップデータの初期化
-    //   const initialProjects: Projects = initialPjs
-    //   setProjects(initialProjects)
-
-    //   // CurrentPjIdの初期化
-    //   const initialCurrentPjId: string = 'pj1'
-    //   setCurrentPjId(initialCurrentPjId)
-
-    //   // カンバンIndexの初期化
-    //   const initialKanbanIndex: KanbanIndex = new Map([
-    //     // ['pj1', new Set(['2'])],
-    //     // ['pj2', new Set(['2-2a', '2-2b', '2-3a', '2-3b'])],
-    //     ['pj1', new Set([])],
-    //     ['pj2', new Set([])],
-    //   ])
-    //   setKanbanIndex(initialKanbanIndex)
-
-    //   // カンバンデータの初期化
-    //   const initialKanbanColumns: KanbanColumns = {
-    //     backlog: [
-    //       // { pjId: 'pj1', nodeId: '2' },
-    //       // { pjId: 'pj2', nodeId: '2-2a' },
-    //     ],
-    //     todo: [
-    //       // { pjId: 'pj2', nodeId: '2-2b' }
-    //     ],
-    //     doing: [
-    //       // { pjId: 'pj2', nodeId: '2-3a' }
-    //     ],
-    //     done: [
-    //       // { pjId: 'pj2', nodeId: '2-3b' }
-    //     ],
-    //   }
-    //   setKanbanColumns(initialKanbanColumns)
-
-    //   console.log('init has been done!!')
-    // }
 
     ;(async () => {
       try {
@@ -135,8 +85,12 @@ export function useLoginBootstrap() {
           credentials: 'include',
         })
 
-        console.log(resProfile)
-        if (!resProfile.ok) throw new Error('unauthorized')
+        if (resProfile.status !== 200) {
+          const errorBody = await resProfile.text()
+          throw new Error(
+            `failed to get user_profile: ${resProfile.status}, ${errorBody}`
+          )
+        }
 
         const userInfo = await resProfile.json()
 
@@ -145,35 +99,32 @@ export function useLoginBootstrap() {
           email: userInfo.email ?? '',
         })
 
-        // /minkanエンドポイントから、ユーザー情報を取得
+        // /minkanエンドポイントから、ユーザー情報をfetch
         const resMinkan = await fetch(`${MINKAN_ENDPOINT}`, {
           credentials: 'include',
         })
 
-        const { minkan, version }: MinkanResponse = await resMinkan.json()
+        if (resMinkan.status !== 200) {
+          const errorBody = await resMinkan.text()
+          throw new Error(
+            `failed to get mindmap_data: ${resMinkan.status}, ${errorBody}`
+          )
+        }
 
+        const { minkan, version: lockVersion }: MinkanGetResponse =
+          await resMinkan.json()
+
+        if (!validateMinkanData(minkan)) {
+          throw new Error('Invalid minkan format from backend')
+        }
+
+        // バックエンドから取得したデータをstoreに格納(初期化)
         const minkanData: MinkanData = minkan
-        const lockVersion: number = version
-
-        const initialProjects: Projects = minkanData.projects
-        const initialCurrentPjId: string = minkanData.currentPjId
-        // KanbanIndexだけsetを使用するので変換が入る
-        const initialKanbanIndex: KanbanIndex = parseKanbanIndex(
-          minkanData.kanbanIndex
-        )
-        const initialKanbanColumns: KanbanColumns = minkanData.kanbanColumns
-
-        // console.log('initialProjects:', initialProjects)
-        // console.log('initialCurrentPjId:', initialCurrentPjId)
-        // console.log('initialKanbanIndex:', initialKanbanIndex)
-        // console.log('initialKanbanColumns:', initialKanbanColumns)
-
-        // storeのバックエンドから取得するデータを初期化
         initStore(
-          initialProjects,
-          initialCurrentPjId,
-          initialKanbanIndex,
-          initialKanbanColumns
+          minkanData.projects,
+          minkanData.currentPjId,
+          deserializeKanbanIndex(minkanData.kanbanIndex),
+          minkanData.kanbanColumns
         )
 
         // 楽観ロック用versionをset
@@ -188,7 +139,18 @@ export function useLoginBootstrap() {
         setAuthStatus('unauthenticated')
       }
     })()
-  }, [isLogin, authStatus])
+  }, [
+    isLogin,
+    authStatus,
+    setUserInfo,
+    setIsLogin,
+    setAuthStatus,
+    setProjects,
+    setCurrentPjId,
+    setKanbanColumns,
+    setKanbanIndex,
+    setLockVersion,
+  ])
 }
 
 // export function AuthCheck() {

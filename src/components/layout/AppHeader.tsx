@@ -20,6 +20,7 @@ import {
   DropdownMenuLabel,
 } from '@/components/ui/dropdown-menu'
 import type { UserInfo } from '@/types'
+import { getCookie } from '@/features/auth/utils/cookieUtils'
 
 // Props for the header
 export type AppHeaderProps = {
@@ -69,25 +70,6 @@ const NavItem: React.FC<{ to: string; label: string }> = ({ to, label }) => (
     {label}
   </NavLink>
 )
-
-const getCookie = (cookieName: string): string | undefined => {
-  const cookieArray = document.cookie.split(';')
-  for (const raw of cookieArray) {
-    const cookie = raw.trim()
-    if (cookie.startsWith(`${cookieName}=`)) {
-      // 最初の '=' 以降をすべて値として扱う
-      // - =が含まれるケースをケアするため、cookieNameの文字数で区切る
-      const targetCookieValue = cookie.slice(cookieName.length + 1)
-      try {
-        // URIエンコードされている場合をケア
-        return decodeURIComponent(targetCookieValue)
-      } catch {
-        return targetCookieValue
-      }
-    }
-  }
-  return undefined
-}
 
 export default function AppHeader({ userInfo }: AppHeaderProps) {
   const userName = userInfo ? userInfo.displayName : 'guest'

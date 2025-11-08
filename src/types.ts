@@ -192,8 +192,17 @@ export type MinkanData = {
   kanbanColumns: KanbanColumns
 }
 
-export type MinkanResponse = {
+export type MinkanGetResponse = {
   minkan: MinkanData
+  version: number //楽観ロック用
+}
+
+export type MinkanPutRequest = {
+  minkan: MinkanData
+  version: number //楽観ロック用
+}
+
+export type MinkanPutResponse = {
   version: number //楽観ロック用
 }
 
