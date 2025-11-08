@@ -241,8 +241,6 @@ function Kanban() {
     movedInFrameRef.current = true // 次フレームまでは、handleDragOverを即returnする
     requestAnimationFrame(() => (movedInFrameRef.current = false))
 
-    console.log('onDragOver!!!')
-
     setKanbanColumns(nextCols)
   }
 

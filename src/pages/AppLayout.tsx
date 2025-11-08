@@ -16,10 +16,10 @@ export function AppLayout() {
   const { userInfo } = useWholeStore(useShallow(selector))
 
   return (
-    <div className="flex min-h-screen flex-col">
-      {/* <AppHeader user={{ name: 'ゲスト' }} /> */}
+    <div className="flex h-screen flex-col overflow-hidden">
       <AppHeader userInfo={userInfo} />
-      <main className="min-w-0 flex-1 overflow-hidden">
+      <main className="flex-1 overflow-hidden">
+        {/* <main className="min-w-0 flex-1 overflow-hidden"> */}
         <Outlet />
       </main>
     </div>

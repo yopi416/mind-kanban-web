@@ -7,7 +7,6 @@ export function pruneColumnsSubtree(
 ): KanbanColumns {
   if (idSetToDelete.size === 0) return cols
 
-  console.log(cols)
   const nextCols: KanbanColumns = { ...cols }
 
   for (const [colName, cardRefList] of Object.entries(nextCols) as [
@@ -23,7 +22,6 @@ export function pruneColumnsSubtree(
     nextCols[colName] = nextCardRefList
   }
 
-  console.log(nextCols)
   return nextCols
 }
 

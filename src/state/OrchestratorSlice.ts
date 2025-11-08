@@ -149,8 +149,6 @@ export const createOrchestratorSlice: StateCreator<
       /*-------------------------------
                 まとめてセット
         ------------------------------- */
-      console.log(nextCols)
-      console.log(nextIndex)
 
       return {
         projects: newPjs,

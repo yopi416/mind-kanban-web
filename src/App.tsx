@@ -30,11 +30,10 @@ function AuthGate() {
   // - 初回ログイン後のログインチェック前 = unknown
   // - 初回ログイン後のログインチェック後 = authed/ unauthed
   if (authStatus === 'unauthenticated') {
-    console.log('Login していないのでリダイレクト')
+    console.log('未Loginのためloginページに移動します')
     return <Navigate to="login" replace />
   }
 
-  console.log('試験用なので常に認証成功')
   return <Outlet /> // ← 一旦は常に通す
 }
 

@@ -32,33 +32,33 @@ export type AppHeaderProps = {
 }
 
 // Simple inline SVG logo (placeholder)
-const Logo: React.FC = () => (
-  <div className="flex items-center gap-2">
-    <svg
-      xmlns="http://www.w3.org/2000/svg"
-      viewBox="0 0 64 64"
-      className="h-6 w-6"
-      aria-hidden
-    >
-      <defs>
-        <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
-          <stop offset="0%" stopColor="#60a5fa" />
-          <stop offset="100%" stopColor="#34d399" />
-        </linearGradient>
-      </defs>
-      <rect x="4" y="8" width="56" height="48" rx="10" fill="url(#g)" />
-      <path
-        d="M18 24h28M18 32h18M18 40h10"
-        stroke="white"
-        strokeWidth="4"
-        strokeLinecap="round"
-      />
-    </svg>
-    <span className="hidden font-semibold tracking-tight sm:inline">
-      MindKanban
-    </span>
-  </div>
-)
+// const Logo: React.FC = () => (
+//   <div className="flex items-center gap-2">
+//     <svg
+//       xmlns="http://www.w3.org/2000/svg"
+//       viewBox="0 0 64 64"
+//       className="h-6 w-6"
+//       aria-hidden
+//     >
+//       <defs>
+//         <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
+//           <stop offset="0%" stopColor="#60a5fa" />
+//           <stop offset="100%" stopColor="#34d399" />
+//         </linearGradient>
+//       </defs>
+//       <rect x="4" y="8" width="56" height="48" rx="10" fill="url(#g)" />
+//       <path
+//         d="M18 24h28M18 32h18M18 40h10"
+//         stroke="white"
+//         strokeWidth="4"
+//         strokeLinecap="round"
+//       />
+//     </svg>
+//     <span className="hidden font-semibold tracking-tight sm:inline">
+//       MindKanban
+//     </span>
+//   </div>
+// )
 
 const NavItem: React.FC<{ to: string; label: string }> = ({ to, label }) => (
   <NavLink
@@ -151,7 +151,25 @@ export default function AppHeader({ userInfo }: AppHeaderProps) {
         <div className="flex h-14 w-full items-center justify-between gap-3 px-3 sm:h-16 sm:px-6 lg:px-8 xl:px-10 2xl:px-12">
           {/* Left: Logo */}
           <Link to="/" className="shrink-0" aria-label="Home">
-            <Logo />
+            {/* <Logo /> */}
+            <div className="flex items-center">
+              {/* ロゴ */}
+              {/* <img
+                src="/src/assets/minkan-logo.png"
+                alt="MinKan Logo"
+                width={70}
+                height={70}
+                className="drop-shadow-sm"
+              /> */}
+              {/* タイトル */}
+              <img
+                src="/src/assets/title-logo.png"
+                alt="MinKan Logo"
+                width={100}
+                height={100}
+                className="drop-shadow-sm"
+              />
+            </div>
           </Link>
 
           {/* Middle: nav links (React Router) */}

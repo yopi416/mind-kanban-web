@@ -385,7 +385,7 @@ function MindMap() {
     // <div style={{ height: '100%' }}>
     <div className="relative h-full w-full">
       {/* Undo/Redo toolbar */}
-      <div className="bg-background/70 absolute left-3 top-3 z-10 flex items-center gap-1 rounded-xl border px-1.5 py-1 shadow-sm backdrop-blur">
+      <div className="bg-background/70 absolute left-3 top-3 z-20 flex items-center gap-1 rounded-xl border px-1.5 py-1 shadow-sm backdrop-blur">
         <TooltipProvider>
           {/* Undo */}
           <Tooltip>

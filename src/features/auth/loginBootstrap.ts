@@ -66,7 +66,7 @@ export function useLoginBootstrap() {
       initialKanbanIndex: KanbanIndex,
       initialKanbanColumns: KanbanColumns
     ) => {
-      console.log('init store from backend')
+      // console.log('init store from backend')
 
       setProjects(structuredClone(initialProjects))
       setCurrentPjId(initialCurrentPjId)
@@ -77,7 +77,7 @@ export function useLoginBootstrap() {
       setKanbanIndex(clonedKanbanIndex)
       setKanbanColumns(structuredClone(initialKanbanColumns))
 
-      console.log('init finished')
+      // console.log('init finished')
     }
 
     ;(async () => {

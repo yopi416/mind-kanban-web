@@ -56,7 +56,6 @@ export function SortableCard(props: SortableCardProps) {
     e.preventDefault()
     const cardToDelete: KanbanCardRef = { ...props }
     removeCard(cardToDelete)
-    console.log(useWholeStore.getState().kanbanColumns)
   }
 
   return (

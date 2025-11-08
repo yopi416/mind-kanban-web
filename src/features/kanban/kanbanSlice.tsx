@@ -55,7 +55,6 @@ export const createKanbanSlice: StateCreator<
       if (!nodeIdSet) return {}
 
       if (nodeIdSet.has(cardToAdd.nodeId)) {
-        console.log('同じカードが存在！！')
         return {}
       }
 
@@ -94,7 +93,6 @@ export const createKanbanSlice: StateCreator<
             !descendantNodeIdSet.has(cardRef.nodeId)
           )
         })
-        console.log(nextCardRefList)
         nextCols[colName] = nextCardRefList
       }
 
@@ -140,7 +138,6 @@ export const createKanbanSlice: StateCreator<
         (card) => card.nodeId !== cardToMove.nodeId
       )
       if (prevFromCol.length === nextFromCol.length) {
-        console.log('移動するノードが存在しない')
         return {}
       }
 
