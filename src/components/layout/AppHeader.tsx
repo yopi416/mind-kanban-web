@@ -26,6 +26,9 @@ import { saveMinkanData } from '@/features/shared/minkanUtils'
 import { useState } from 'react'
 import { HelpSidePanel } from './components/HelpSidePanel'
 
+// import minkanLogo from "@/assets/minkan-logo.png"
+import titleLogo from '@/assets/title-logo.png'
+
 // Props for the header
 export type AppHeaderProps = {
   userInfo: UserInfo | null
@@ -163,7 +166,8 @@ export default function AppHeader({ userInfo }: AppHeaderProps) {
               /> */}
               {/* タイトル */}
               <img
-                src="/src/assets/title-logo.png"
+                // src="/src/assets/title-logo.png"
+                src={titleLogo}
                 alt="MinKan Logo"
                 width={100}
                 height={100}

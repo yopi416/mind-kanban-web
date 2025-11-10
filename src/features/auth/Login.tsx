@@ -1,27 +1,8 @@
-// import { useNavigate } from 'react-router'
-// import { useWholeStore } from '@/state/store'
-// import { dummyBootstrap } from '@/dummy/bootstrap'
-// import { useState } from 'react'
-import type {} from // Projects,
-// WholeStoreState,
-// KanbanColumns,
-// KanbanIndex,
-'@/types'
-// import { useWholeStore } from '@/state/store'
-// import { useShallow } from 'zustand/shallow'
-// import { initialPjs } from '../mindmap/mockInitialElements'
-import { OIDC_GOOGLE_LOGIN_ENDPOINT } from '@/constants/api'
+// import type {} from // Projects,
+import minkanLogo from '@/assets/minkan-logo.png'
+import titleLogo from '@/assets/title-logo.png'
 
-// const selector = (store: WholeStoreState) => {
-//   return {
-//     isLogin: store.isLogin,
-//     setIsLogin: store.setIsLogin,
-//     setProjects: store.setProjects,
-//     setCurrentPjId: store.setCurrentPjId,
-//     setKanbanIndex: store.setKanbanIndex,
-//     setKanbanColumns: store.setKanbanColumns,
-//   }
-// }
+import { OIDC_GOOGLE_LOGIN_ENDPOINT } from '@/constants/api'
 
 export function Login() {
   const onGoogleLogin = () => {
@@ -37,7 +18,8 @@ export function Login() {
           <div className="flex items-center">
             {/* ロゴ */}
             <img
-              src="/src/assets/minkan-logo.png"
+              // src="/src/assets/minkan-logo.png"
+              src={minkanLogo}
               alt="MinKan Logo"
               width={170}
               height={170}
@@ -45,7 +27,8 @@ export function Login() {
             />
             {/* タイトル */}
             <img
-              src="/src/assets/title-logo.png"
+              // src="/src/assets/title-logo.png"
+              src={titleLogo}
               alt="MinKan Logo"
               width={250}
               height={150}
