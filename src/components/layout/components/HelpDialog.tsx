@@ -22,15 +22,13 @@ export function HelpDialogContent() {
             <table className="w-full border-collapse text-left text-sm">
               <tbody>
                 <tr>
-                  <td className="text-muted-foreground w-32 py-1">選択</td>
-                  <td>タスクをクリック</td>
+                  <td className="text-muted-foreground w-32 py-1">編集開始</td>
+                  <td>タスクをクリック または "e"</td>
                 </tr>
 
                 <tr>
-                  <td className="text-muted-foreground py-1">編集を保存</td>
-                  <td>
-                    選択中にもう一度クリック / Ctrl+Enter または Esc で確定
-                  </td>
+                  <td className="text-muted-foreground py-1">改行/編集確定</td>
+                  <td>Shift + Enterで改行 / Enter または Esc で確定</td>
                 </tr>
 
                 <tr>
