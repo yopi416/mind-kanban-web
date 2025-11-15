@@ -431,14 +431,26 @@ function CustomNode({ id, data }: NodeProps<Node<NodeData>>) {
         // readOnly={!isEditing}
         tabIndex={isEditing ? 0 : -1} // 編集中以外はフォーカス対象外
         onKeyDown={(e) => {
-          //Ctrl + Enterで入力完了
-          if (
-            ((e.ctrlKey || e.metaKey) && e.key === 'Enter') ||
-            e.key === 'Escape'
-          ) {
+          // Shift + Enter → 改行
+          if (e.key === 'Enter' && e.shiftKey) {
+            return // デフォルトの改行を許可
+          }
+
+          // Enter or Esc → 入力確定（フォーカス解除）
+          if (e.key === 'Enter' || e.key === 'Escape') {
             e.preventDefault()
             textAreaRef.current?.blur()
+            return
           }
+
+          // //Ctrl + Enterで入力完了
+          // if (
+          //   ((e.ctrlKey || e.metaKey) && e.key === 'Enter') ||
+          //   e.key === 'Escape'
+          // ) {
+          //   e.preventDefault()
+          //   textAreaRef.current?.blur()
+          // }
 
           e.stopPropagation() // textarea入力中は上位に矢印キーの伝播を止める
         }}
