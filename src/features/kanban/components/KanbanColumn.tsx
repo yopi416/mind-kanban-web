@@ -6,6 +6,14 @@ import { SortableCard } from './SortableCard'
 import { useShallow } from 'zustand/shallow'
 import { ApplyDoneButton } from '../ApplyDoneButton'
 
+// 暫定（後に修正）
+const columnLabelMap: Record<string, string> = {
+  backlog: 'TODO',
+  todo: '実行中',
+  doing: '待ち',
+  done: '完了',
+}
+
 type KanbanColumnProps = {
   colName: KanbanColumnName
 }
@@ -32,7 +40,8 @@ export const KanbanColumn = (props: KanbanColumnProps) => {
       {/* 共通デザインのヘッダー */}
       <div className="flex items-center justify-between rounded-t-xl bg-slate-100 px-3 py-2">
         <div className="text-s font-semibold uppercase tracking-wide text-slate-700">
-          {props.colName.replace('-', ' ')}
+          {columnLabelMap[props.colName] ?? props.colName}
+          {/* {props.colName.replace('-', ' ')} */}
         </div>
         <span className="ml-2 rounded-full bg-slate-200 px-2 py-0.5 text-xs font-semibold text-slate-700">
           {cardRefList.length}
